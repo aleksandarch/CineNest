@@ -24,6 +24,9 @@ ios/ServiceDefinitions.json
 # Environment variables
 .env
 
+# Firebase secrets and config files (if any)
+firebase-debug.log
+
 # IntelliJ related
 *.iml
 *.ipr
