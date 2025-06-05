@@ -23,6 +23,8 @@ ios/ServiceDefinitions.json
 
 # Environment variables
 .env
+google-services.json
+GoogleService-Info.plist
 
 # Firebase secrets and config files (if any)
 firebase-debug.log
@@ -58,3 +60,5 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+android/app/google-services.json
+android/app/google-services.json
