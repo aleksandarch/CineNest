@@ -9,7 +9,7 @@ class Boxes {
   static Future<Iterable<int>> addMovies(List<MovieModel> movies) =>
       Hive.box<MovieModel>('MovieBox').addAll(movies);
 
-  static Box<MovieModel> getMovies() => Hive.box('MovieBox');
+  static Box<MovieModel> getMovies() => Hive.box<MovieModel>('MovieBox');
 
   static Future<int> clearMovies() => Hive.box('MovieBox').clear();
 

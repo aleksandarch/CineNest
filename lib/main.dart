@@ -8,6 +8,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/src/change_notifier_provider.dart';
 import 'package:provider/src/provider.dart';
 
+import 'blocs/bookmark_bloc.dart';
 import 'blocs/sign_in_bloc.dart';
 import 'boxes/boxes.dart';
 import 'models/movie_model.dart';
@@ -41,6 +42,7 @@ class CineNestApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        ChangeNotifierProvider(create: (_) => BookmarkBloc()),
         ChangeNotifierProvider<SignInBloc>(create: (context) => SignInBloc()),
       ],
       child: MaterialApp.router(

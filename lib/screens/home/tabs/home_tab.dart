@@ -1,128 +1,243 @@
+import 'package:animated_text_kit/animated_text_kit.dart';
+import 'package:card_swiper/card_swiper.dart';
+import 'package:cine_nest/constants/constants.dart';
+import 'package:cine_nest/widgets/empty_page.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import '../../../boxes/boxes.dart';
 import '../../../models/movie_model.dart';
-import '../../../routes/router_constants.dart';
-import '../../../services/movie_service.dart';
+import '../../../widgets/movie_display_cards/new_movie_card.dart';
+import '../../../widgets/movie_display_cards/standard_movie_card.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   final ScrollController scrollController;
   const HomeScreen({super.key, required this.scrollController});
 
-  Future<void> _reloadMovies(BuildContext context) async {
-    await MovieService.instance.refreshMovies();
-  }
-
   @override
-  Widget build(BuildContext context) {
-    final Box<MovieModel> movieBox = Boxes.getMovies();
-
-    return ValueListenableBuilder(
-      valueListenable: movieBox.listenable(),
-      builder: (context, Box<MovieModel> box, _) {
-        if (box.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text('No movies found.'),
-                const SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: () => _reloadMovies(context),
-                  child: const Text('Reload Movies'),
-                ),
-              ],
-            ),
-          );
-        }
-
-        final movies = box.values.toList();
-
-        return SafeArea(
-          bottom: false,
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              bool isWide = constraints.maxWidth > 600;
-              int crossAxisCount =
-                  isWide ? 3 : 2; // 3 columns on wide screens, 2 on small
-
-              return GridView.builder(
-                controller: scrollController,
-                padding: EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: MediaQuery.of(context).padding.top),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: crossAxisCount,
-                  childAspectRatio: 0.7,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                ),
-                itemCount: movies.length,
-                itemBuilder: (context, index) {
-                  final movie = movies[index];
-                  return _MovieCard(movie: movie);
-                },
-              );
-            },
-          ),
-        );
-      },
-    );
-  }
+  State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _MovieCard extends StatelessWidget {
-  final MovieModel movie;
-
-  const _MovieCard({required this.movie});
+class _HomeScreenState extends State<HomeScreen> {
+  String selectedGenre = 'All';
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        context.push('${RouteConstants.movieDetails}/${movie.id}');
-      },
-      child: Card(
-        elevation: 3,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              child: Hero(
-                tag: movie.id,
-                child: ClipRRect(
-                  borderRadius:
-                      const BorderRadius.vertical(top: Radius.circular(12)),
-                  child: Image.network(
-                    movie.posterUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) =>
-                        const Icon(Icons.broken_image),
-                  ),
-                ),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Text(
-                movie.title,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-            ),
-            IconButton(
-              icon: const Icon(Icons.bookmark_border),
-              onPressed: () {
-                // Bookmark logic
-              },
-            ),
-          ],
-        ),
+    final saveHorizontalPadding = MediaQuery.of(context).padding.left + 20;
+    final Box<MovieModel> movieBox = Boxes.getMovies();
+
+    return SingleChildScrollView(
+      controller: widget.scrollController,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSalute(saveHorizontalPadding),
+          ValueListenableBuilder(
+            valueListenable: movieBox.listenable(),
+            builder: (context, Box<MovieModel> box, _) {
+              if (box.isEmpty) {
+                return Padding(
+                  padding:
+                      EdgeInsets.symmetric(horizontal: saveHorizontalPadding),
+                  child: EmptyPage(
+                      title: 'Error Loading Movies. Please reload.',
+                      showReloadButton: true,
+                      artificialExpand: true),
+                );
+              }
+
+              final movies = box.values.toList();
+
+              final filteredByRating = movies
+                  .where((movie) =>
+                      movie.genres.contains(selectedGenre) ||
+                      selectedGenre == 'All')
+                  .where((movie) =>
+                      movie.imdbRating != null && movie.imdbRating! > 0)
+                  .toList()
+                ..sort((a, b) => b.imdbRating!.compareTo(a.imdbRating!));
+
+              final genres = movies
+                  .expand((movie) => movie.genres)
+                  .toSet()
+                  .toList()
+                ..sort((a, b) => a.compareTo(b));
+
+              final newMovies = movies
+                  .where((movie) =>
+                      movie.genres.contains(selectedGenre) ||
+                      selectedGenre == 'All')
+                  .toList()
+                ..sort((a, b) => b.releaseDate.compareTo(a.releaseDate))
+                ..take(10).toList();
+
+              return Column(
+                children: [
+                  _buildGenres(genres),
+                  _buildNewest(saveHorizontalPadding, newMovies),
+                  _buildTopRated(saveHorizontalPadding, filteredByRating),
+                ],
+              );
+            },
+          )
+        ],
       ),
     );
+  }
+
+  Widget _buildSalute(double saveHorizontalPadding) {
+    final user = FirebaseAuth.instance.currentUser;
+    final now = DateTime.now();
+
+    final Box box = Hive.box('UserData');
+    DateTime? lastSaluteDate = box.get('lastSaluteDate') as DateTime?;
+
+    bool greetedToday = false;
+    if (lastSaluteDate != null) {
+      greetedToday = lastSaluteDate.day == now.day &&
+          lastSaluteDate.month == now.month &&
+          lastSaluteDate.year == now.year;
+    }
+
+    if (!greetedToday) box.put('lastSaluteDate', now);
+
+    final String greetingText;
+    if (greetedToday) {
+      greetingText = AppConstants.appName;
+    } else if (user != null) {
+      greetingText = 'Hello, ${user.displayName ?? 'User'} 👋';
+    } else {
+      greetingText = 'Welcome to CineNest';
+    }
+
+    return Padding(
+        padding: EdgeInsets.fromLTRB(
+            saveHorizontalPadding, 4, saveHorizontalPadding, 10),
+        child: Text(greetingText,
+            style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold)));
+  }
+
+  Widget _buildGenres(List<String> genres) {
+    return SizedBox(
+        height: 34,
+        child: ListView.separated(
+            itemBuilder: (BuildContext context, int index) {
+              if (index == 0) {
+                return GestureDetector(
+                    onTap: () => setState(() => selectedGenre = 'All'),
+                    child: _buildGenreChip('All', selectedGenre == 'All'));
+              }
+
+              final genreName = genres[index - 1];
+              return GestureDetector(
+                  onTap: () => setState(() => selectedGenre = genreName),
+                  child:
+                      _buildGenreChip(genreName, selectedGenre == genreName));
+            },
+            padding: EdgeInsets.symmetric(
+                horizontal: MediaQuery.of(context).padding.left + 20),
+            separatorBuilder: (BuildContext context, int index) =>
+                const SizedBox(width: 10),
+            itemCount: genres.length + 1,
+            scrollDirection: Axis.horizontal));
+  }
+
+  Widget _buildGenreChip(String title, bool isSelected) {
+    return AnimatedContainer(
+      duration: Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+      constraints: BoxConstraints(minWidth: 80),
+      alignment: Alignment.center,
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      decoration: BoxDecoration(
+          color: isSelected ? Colors.deepPurple : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.deepPurple)),
+      child: Text(title,
+          style: TextStyle(
+              color: isSelected ? Colors.white : Colors.deepPurple,
+              fontWeight: FontWeight.bold)),
+    );
+  }
+
+  Widget _buildNewest(
+      double saveHorizontalPadding, List<MovieModel> filteredMovies) {
+    double posterHeight = MediaQuery.of(context).size.height * 0.4;
+    if (posterHeight < 280) posterHeight = 280;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Container(
+            margin: EdgeInsets.only(top: 12),
+            padding: EdgeInsets.symmetric(horizontal: saveHorizontalPadding),
+            alignment: Alignment.centerLeft,
+            child: _sectionTitleWidget('The Newest ')),
+        SizedBox(
+          height: posterHeight + 40,
+          width: posterHeight + 140,
+          child: Swiper(
+            itemBuilder: (BuildContext context, int index) =>
+                NewMovieCard(movie: filteredMovies[index]),
+            itemCount: filteredMovies.length,
+            layout: SwiperLayout.STACK,
+            itemWidth: posterHeight / 1.5,
+            itemHeight: posterHeight,
+            axisDirection: AxisDirection.right,
+            loop: false,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTopRated(
+      double saveHorizontalPadding, List<MovieModel> filteredMovies) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: saveHorizontalPadding),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _sectionTitleWidget('Top Rated '),
+          const SizedBox(height: 16),
+          filteredMovies.isEmpty
+              ? Padding(
+                  padding: const EdgeInsets.only(bottom: 140),
+                  child: EmptyPage(title: 'No Movies Found'))
+              : GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  padding: const EdgeInsets.only(bottom: 40),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      childAspectRatio: 3 / 1,
+                      crossAxisCount:
+                          (MediaQuery.of(context).size.width / 500).ceil(),
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 25),
+                  itemCount: filteredMovies.length,
+                  itemBuilder: (context, index) =>
+                      StandardMovieCard(movie: filteredMovies[index]),
+                ),
+        ],
+      ),
+    );
+  }
+
+  Widget _sectionTitleWidget(String leading) {
+    return Row(mainAxisSize: MainAxisSize.min, children: [
+      Text(leading,
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+      AnimatedTextKit(
+          key: ValueKey(selectedGenre),
+          repeatForever: false,
+          animatedTexts: [
+            TyperAnimatedText(
+              selectedGenre == 'All' ? 'Movies' : '$selectedGenre Movies',
+              textStyle: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            )
+          ],
+          totalRepeatCount: 1),
+    ]);
   }
 }

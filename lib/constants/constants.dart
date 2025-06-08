@@ -6,6 +6,7 @@ class AppConstants {
 
   static String assetImagePath = 'assets/images/';
   static String assetIconsPath = 'assets/icons/';
+  static String assetAnimationsPath = 'assets/animation_files/';
 
   static const String fontsFamily = 'Nexa';
 }

@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../../blocs/bookmark_bloc.dart';
 import '../../blocs/sign_in_bloc.dart';
 import '../../routes/router_constants.dart';
+import '../../services/bookmark_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -21,11 +23,14 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
     try {
       final bloc = context.read<SignInBloc>();
-      await bloc.signInWithEmail(
+      final user = await bloc.signInWithEmail(
         _emailController.text.trim(),
         _passwordController.text.trim(),
       );
       if (mounted) {
+        final bookmarkNotifier =
+            Provider.of<BookmarkBloc>(context, listen: false);
+        BookmarkService.subscribeToBookmarks(user?.uid ?? '', bookmarkNotifier);
         context.go(RouteConstants.main);
       }
     } catch (e) {

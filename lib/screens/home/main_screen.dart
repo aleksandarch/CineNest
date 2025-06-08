@@ -1,7 +1,7 @@
+import 'package:cine_nest/screens/home/tabs/search_tab.dart';
 import 'package:flutter/material.dart';
 
 import '../../widgets/animated_bottom_bar.dart';
-import 'tabs/bookmark_tab.dart';
 import 'tabs/home_tab.dart';
 import 'tabs/profile_tab.dart';
 
@@ -23,7 +23,7 @@ class _MainScreenState extends State<MainScreen>
   void initState() {
     super.initState();
     tabController =
-        TabController(vsync: this, length: 4, initialIndex: _currentIndex);
+        TabController(vsync: this, length: 3, initialIndex: _currentIndex);
   }
 
   void _onTabSelected(int index) {
@@ -45,15 +45,17 @@ class _MainScreenState extends State<MainScreen>
                 scrollController: scrollController,
                 currentIndex: _currentIndex,
                 onTabSelected: _onTabSelected)),
-        body: TabBarView(
-          controller: tabController,
-          physics: const NeverScrollableScrollPhysics(),
-          children: [
-            HomeScreen(scrollController: scrollController),
-            Placeholder(),
-            BookmarkScreen(),
-            ProfileScreen(),
-          ],
+        body: Padding(
+          padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top),
+          child: TabBarView(
+            controller: tabController,
+            physics: const NeverScrollableScrollPhysics(),
+            children: [
+              HomeScreen(scrollController: scrollController),
+              SearchTab(scrollController: scrollController),
+              ProfileScreen(scrollController: scrollController),
+            ],
+          ),
         ));
   }
 }

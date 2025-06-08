@@ -26,6 +26,8 @@ dependencies:
   cupertino_icons: ^1.0.8
   blurrycontainer: ^2.1.0
   cached_network_image: ^3.3.1
+  animated_text_kit: ^4.2.3
+  card_swiper: ^3.0.1
 
   # Backend
   hive: ^2.2.3

@@ -33,14 +33,14 @@ class MovieService {
     return [];
   }
 
-  Future<void> refreshMovies() async {
+  Future<void> refreshMovies({bool toEmptyBox = false}) async {
     try {
-      final Box<MovieModel> movieBox = Boxes.getMovies();
-
-      await movieBox.clear();
+      if (toEmptyBox) {
+        final Box<MovieModel> movieBox = Boxes.getMovies();
+        await movieBox.clear();
+      }
 
       final List<MovieModel> movies = await _fetchMovies();
-
       await Boxes.addMovies(movies);
     } catch (e) {
       debugPrint('Failed to refresh movies: $e');

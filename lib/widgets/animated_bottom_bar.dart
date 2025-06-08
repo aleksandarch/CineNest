@@ -27,9 +27,6 @@ class AnimatedBottomBar extends StatelessWidget {
         selectedIcon: CupertinoIcons.search,
         unselectedIcon: CupertinoIcons.search),
     ModelBottomBarTab(
-        selectedIcon: CupertinoIcons.bookmark_fill,
-        unselectedIcon: CupertinoIcons.bookmark),
-    ModelBottomBarTab(
         selectedIcon: CupertinoIcons.person,
         unselectedIcon: CupertinoIcons.person),
   ];
@@ -52,7 +49,7 @@ class AnimatedBottomBar extends StatelessWidget {
             return GestureDetector(
               onTap: currentIndex == index ? null : () => onTabSelected(index),
               child: Container(
-                width: 55,
+                width: 60,
                 decoration: BoxDecoration(
                     color: isActiveTab
                         ? Theme.of(context).colorScheme.primary

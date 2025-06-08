@@ -2,6 +2,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
+import '../services/bookmark_service.dart';
+
 class SignInBloc extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
@@ -11,6 +13,18 @@ class SignInBloc extends ChangeNotifier {
 
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
+
+  String? _userId;
+  String? get userId => _userId;
+
+  String? _userEmail;
+  String? get userEmail => _userEmail;
+
+  String? _username;
+  String? get username => _username;
+
+  String? _profileImageUrl;
+  String? get profileImageUrl => _profileImageUrl;
 
   bool get isSignedIn => _auth.currentUser != null;
 
@@ -93,8 +107,17 @@ class SignInBloc extends ChangeNotifier {
   Future<void> signOut() async {
     await _auth.signOut();
     await _googleSignIn.signOut();
+    BookmarkService.unsubscribe();
     notifyListeners();
   }
+
+  // Future<void> _logout(BuildContext context) async {
+  //   final bloc = context.read<SignInBloc>();
+  //   await bloc.signOut();
+  //   // await Boxes.clear(); // Clear local Hive boxes
+  // }
+  //
+  Future<void> deleteAccount(BuildContext context) async {}
 
   void _setLoading(bool value) {
     _isLoading = value;
