@@ -1,6 +1,12 @@
+import 'package:cine_nest/blocs/sign_in_bloc.dart';
 import 'package:cine_nest/screens/home/tabs/search_tab.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
+import '../../blocs/bookmark_bloc.dart';
+import '../../routes/router_constants.dart';
+import '../../services/bookmark_service.dart';
 import '../../widgets/animated_bottom_bar.dart';
 import 'tabs/home_tab.dart';
 import 'tabs/profile_tab.dart';
@@ -22,6 +28,13 @@ class _MainScreenState extends State<MainScreen>
   @override
   void initState() {
     super.initState();
+
+    final sb = context.read<SignInBloc>();
+    if (sb.isSignedIn) {
+      final bb = context.read<BookmarkBloc>();
+      BookmarkService.subscribeToBookmarks(sb.userId!, bb);
+    }
+
     tabController =
         TabController(vsync: this, length: 3, initialIndex: _currentIndex);
   }

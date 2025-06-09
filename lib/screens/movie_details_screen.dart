@@ -1,51 +1,43 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../blocs/bookmark_bloc.dart';
 import '../blocs/sign_in_bloc.dart';
 import '../models/movie_model.dart';
 import '../routes/router_constants.dart';
-import '../services/bookmark_service.dart';
 
 class MovieDetailsScreen extends StatelessWidget {
   final MovieModel movie;
 
   const MovieDetailsScreen({super.key, required this.movie});
 
+  void _onBookmarkToggle(BuildContext context, SignInBloc sb, BookmarkBloc bb) {
+    if (sb.isSignedIn) {
+      bb.toggleBookmark(userId: sb.userId!, movieId: movie.id);
+    } else {
+      context.push(RouteConstants.login);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final sb = context.read<SignInBloc>();
+    final bb = context.watch<BookmarkBloc>();
+    final isBookmarked = bb.isBookmarked(movie.id);
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          movie.title,
-          overflow: TextOverflow.ellipsis,
-        ),
+        title: Text(movie.title, overflow: TextOverflow.ellipsis),
         actions: [
           IconButton(
-            icon: const Icon(Icons.bookmark_border),
-            onPressed: () async {
-              final bloc = context.read<SignInBloc>();
-              if (bloc.isSignedIn) {
-                try {
-                  await BookmarkService.addBookmark(
-                    userId: bloc.currentUser!.uid,
-                    movieId: movie.id,
-                  );
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Bookmarked!')),
-                  );
-                } catch (e) {
-                  print(e);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(e.toString())),
-                  );
-                }
-              } else {
-                // Redirect to Login
-                context.push(RouteConstants.login);
-              }
-            },
-          ),
+              padding: EdgeInsets.zero,
+              splashColor: Colors.transparent,
+              highlightColor: Colors.transparent,
+              icon: Icon(isBookmarked
+                  ? CupertinoIcons.bookmark_fill
+                  : CupertinoIcons.bookmark),
+              onPressed: () => _onBookmarkToggle(context, sb, bb)),
         ],
       ),
       body: SingleChildScrollView(

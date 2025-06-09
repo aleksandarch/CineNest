@@ -1,12 +1,13 @@
 import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:card_swiper/card_swiper.dart';
-import 'package:cine_nest/constants/constants.dart';
 import 'package:cine_nest/widgets/empty_page.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:provider/provider.dart';
 
+import '../../../blocs/sign_in_bloc.dart';
 import '../../../boxes/boxes.dart';
+import '../../../constants/constants.dart';
 import '../../../models/movie_model.dart';
 import '../../../widgets/movie_display_cards/new_movie_card.dart';
 import '../../../widgets/movie_display_cards/standard_movie_card.dart';
@@ -26,13 +27,14 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final saveHorizontalPadding = MediaQuery.of(context).padding.left + 20;
     final Box<MovieModel> movieBox = Boxes.getMovies();
+    final sb = context.watch<SignInBloc>();
 
     return SingleChildScrollView(
       controller: widget.scrollController,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSalute(saveHorizontalPadding),
+          _buildSalute(saveHorizontalPadding, sb),
           ValueListenableBuilder(
             valueListenable: movieBox.listenable(),
             builder: (context, Box<MovieModel> box, _) {
@@ -86,8 +88,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildSalute(double saveHorizontalPadding) {
-    final user = FirebaseAuth.instance.currentUser;
+  Widget _buildSalute(double saveHorizontalPadding, SignInBloc sb) {
     final now = DateTime.now();
 
     final Box box = Hive.box('UserData');
@@ -103,10 +104,13 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!greetedToday) box.put('lastSaluteDate', now);
 
     final String greetingText;
+    bool showAppIcon = false;
+
     if (greetedToday) {
+      showAppIcon = true;
       greetingText = AppConstants.appName;
-    } else if (user != null) {
-      greetingText = 'Hello, ${user.displayName ?? 'User'} 👋';
+    } else if (sb.isSignedIn) {
+      greetingText = '👋 Hello, ${sb.username ?? 'User'}';
     } else {
       greetingText = 'Welcome to CineNest';
     }
@@ -114,8 +118,21 @@ class _HomeScreenState extends State<HomeScreen> {
     return Padding(
         padding: EdgeInsets.fromLTRB(
             saveHorizontalPadding, 4, saveHorizontalPadding, 10),
-        child: Text(greetingText,
-            style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold)));
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (showAppIcon)
+              Padding(
+                  padding: const EdgeInsets.only(right: 4),
+                  child: Image.asset(
+                      '${AppConstants.assetImagePath}app_icon.png',
+                      height: 30)),
+            Text(greetingText,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
+          ],
+        ));
   }
 
   Widget _buildGenres(List<String> genres) {

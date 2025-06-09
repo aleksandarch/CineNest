@@ -49,11 +49,16 @@ class EmptyPage extends StatelessWidget {
               Text(title,
                   style: TextStyle(color: Colors.black.withValues(alpha: 0.7))),
               if (showReloadButton)
-                CustomButton(title: 'Reload Movies', onPressed: _reloadMovies),
+                Padding(
+                    padding: const EdgeInsets.only(top: 30),
+                    child: CustomButton(
+                        title: 'Reload Movies', onPressed: _reloadMovies)),
               if (showLoginButton)
-                CustomButton(
-                    title: 'Login Now',
-                    onPressed: () async => _loginNow(context)),
+                Padding(
+                    padding: const EdgeInsets.only(top: 30),
+                    child: CustomButton(
+                        title: 'Login Now',
+                        onPressed: () async => _loginNow(context))),
             ],
           ),
           const SizedBox()

@@ -61,6 +61,7 @@ class _CustomButtonState extends State<CustomButton>
       child: ScaleTransition(
         scale: _animationController,
         child: Container(
+          constraints: BoxConstraints(maxWidth: 400),
           height: 50,
           alignment: Alignment.center,
           margin: const EdgeInsets.only(top: 10),
@@ -79,7 +80,9 @@ class _CustomButtonState extends State<CustomButton>
             child: _isLoading
                 ? Loader(
                     key: ValueKey('loader'),
-                    color: widget.textColor,
+                    color: widget.inverseColors
+                        ? widget.bgColor
+                        : widget.textColor,
                     loaderWidth: 20)
                 : Text(widget.title,
                     key: ValueKey('text'),

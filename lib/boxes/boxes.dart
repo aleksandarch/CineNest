@@ -13,5 +13,10 @@ class Boxes {
 
   static Future<int> clearMovies() => Hive.box('MovieBox').clear();
 
+  // ------------------ User data box ------------------
+  static Future<Box> openUserDataBox() => Hive.openBox('UserData');
+
   static Box getUserData() => Hive.box('UserData');
+
+  static Future<int> clearUserData() => Hive.box('UserData').clear();
 }

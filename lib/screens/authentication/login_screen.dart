@@ -1,3 +1,8 @@
+import 'package:cine_nest/constants/constants.dart';
+import 'package:cine_nest/widgets/custom_button.dart';
+import 'package:cine_nest/widgets/custom_text_field.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -6,6 +11,8 @@ import '../../blocs/bookmark_bloc.dart';
 import '../../blocs/sign_in_bloc.dart';
 import '../../routes/router_constants.dart';
 import '../../services/bookmark_service.dart';
+import '../../utils/validators.dart';
+import '../../widgets/text_link_button.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -15,106 +22,198 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  late TextEditingController _emailController;
+  late TextEditingController _passwordController;
   bool _isLoading = false;
 
+  @override
+  void initState() {
+    _emailController = TextEditingController();
+    _passwordController = TextEditingController();
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
   Future<void> _login(BuildContext context) async {
+    bool validateForm() {
+      if (_formKey.currentState == null) return false;
+      return _formKey.currentState!.validate();
+    }
+
+    if (!validateForm()) return;
+
     setState(() => _isLoading = true);
-    try {
-      final bloc = context.read<SignInBloc>();
-      final user = await bloc.signInWithEmail(
-        _emailController.text.trim(),
-        _passwordController.text.trim(),
-      );
-      if (mounted) {
-        final bookmarkNotifier =
-            Provider.of<BookmarkBloc>(context, listen: false);
-        BookmarkService.subscribeToBookmarks(user?.uid ?? '', bookmarkNotifier);
-        context.go(RouteConstants.main);
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
-    } finally {
-      setState(() => _isLoading = false);
+    final sb = context.read<SignInBloc>();
+
+    final user = await sb.signInWithEmail(
+        _emailController.text.trim(), _passwordController.text.trim());
+
+    if (context.mounted) {
+      _handleLoginResult(context, user, 'Invalid email or password.');
     }
   }
 
   Future<void> _loginWithGoogle(BuildContext context) async {
     setState(() => _isLoading = true);
-    try {
-      final bloc = context.read<SignInBloc>();
-      await bloc.signInWithGoogle();
-      if (mounted) {
-        context.go(RouteConstants.main);
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
-    } finally {
-      setState(() => _isLoading = false);
+
+    final bloc = context.read<SignInBloc>();
+    final user = await bloc.signInWithGoogle();
+
+    if (context.mounted) {
+      _handleLoginResult(
+          context, user, 'Google sign-in failed. Try another method.');
     }
+  }
+
+  void _handleLoginResult(
+      BuildContext context, User? user, String errorMessage) {
+    if (user != null) {
+      final bb = context.read<BookmarkBloc>();
+      BookmarkService.subscribeToBookmarks(user.uid, bb);
+      context.go(RouteConstants.main);
+    } else {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(errorMessage)));
+    }
+    setState(() => _isLoading = false);
   }
 
   @override
   Widget build(BuildContext context) {
-    print('here');
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(title: const Text('Login')),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            TextField(
-              controller: _emailController,
-              decoration: const InputDecoration(
-                labelText: 'Email',
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _passwordController,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: 'Password',
-              ),
-            ),
-            const SizedBox(height: 24),
-            _isLoading
-                ? const CircularProgressIndicator()
-                : Column(
-                    children: [
-                      ElevatedButton(
-                        onPressed: () => _login(context),
-                        child: const Text('Login'),
-                      ),
-                      const SizedBox(height: 8),
-                      OutlinedButton.icon(
-                        onPressed: () => _loginWithGoogle(context),
-                        icon: const Icon(Icons.login),
-                        label: const Text('Sign in with Google'),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          context.push(RouteConstants.signup);
-                        },
-                        child: const Text('Don’t have an account? Sign Up'),
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          context.push(RouteConstants.forgotPassword);
-                        },
-                        child: const Text('Forgot Password? Reset it'),
-                      ),
-                    ],
+      body: SafeArea(
+        maintainBottomViewPadding: true,
+        child: Padding(
+          padding: EdgeInsets.symmetric(horizontal: 20),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: IntrinsicHeight(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _buildLogo(),
+                        _buildTextField(),
+                        _buildButtons(),
+                      ],
+                    ),
                   ),
-          ],
+                ),
+              );
+            },
+          ),
         ),
       ),
+    );
+  }
+
+  Widget _buildLogo() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(
+            height: 70,
+            alignment: Alignment.center,
+            padding: EdgeInsets.only(left: 12, right: 8),
+            decoration: BoxDecoration(
+                color: Colors.deepPurple,
+                borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(36),
+                    bottomLeft: Radius.circular(36))),
+            child: Image.asset('${AppConstants.assetImagePath}app_icon.png',
+                height: 60)),
+        Container(
+          height: 70,
+          alignment: Alignment.center,
+          padding: EdgeInsets.only(left: 10, right: 16),
+          decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(color: Colors.deepPurple),
+              borderRadius: BorderRadius.only(
+                  topRight: Radius.circular(36),
+                  bottomRight: Radius.circular(36))),
+          child: Text(AppConstants.appName,
+              style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.deepPurple)),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTextField() {
+    return Form(
+      key: _formKey,
+      child: Column(
+        children: [
+          CustomTextField(
+              hintText: 'Enter Your Email Address',
+              onSubmit: (_) {},
+              controller: _emailController,
+              keyboardType: TextInputType.emailAddress,
+              textInputAction: TextInputAction.next,
+              validator: Validators.validateEmail,
+              title: 'Email'),
+          const SizedBox(height: 14),
+          CustomTextField(
+              hintText: 'Enter Your Password',
+              onSubmit: (_) {},
+              controller: _passwordController,
+              keyboardType: TextInputType.text,
+              textInputAction: TextInputAction.done,
+              validator: Validators.validatePassword,
+              title: 'Password',
+              toObscure: true),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildButtons() {
+    return Column(
+      children: [
+        CustomButton(
+            onPressed: () async {
+              if (!_isLoading) await _login(context);
+            },
+            title: 'Login'),
+        const SizedBox(height: 4),
+        if (!kIsWeb)
+          CustomButton(
+              onPressed: () async {
+                if (!_isLoading) await _loginWithGoogle(context);
+              },
+              title: 'Sign in with Google',
+              inverseColors: true),
+        const SizedBox(height: 26),
+        Column(
+          children: [
+            TextLinkButton(
+                leadingText: 'Don’t have an account?',
+                trailingText: 'Sign Up',
+                onTap: () => context.push(RouteConstants.signup),
+                isDisabled: _isLoading),
+            const SizedBox(height: 14),
+            TextLinkButton(
+                leadingText: 'Forgot Password?',
+                trailingText: 'Reset it',
+                onTap: () => context.push(RouteConstants.forgotPassword),
+                isDisabled: _isLoading),
+          ],
+        ),
+      ],
     );
   }
 }

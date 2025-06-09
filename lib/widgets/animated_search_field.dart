@@ -74,8 +74,7 @@ class _AnimatedTextFieldState extends State<AnimatedTextField> {
         floatingLabelBehavior: FloatingLabelBehavior.never,
         focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(25),
-            borderSide:
-                BorderSide(color: Colors.deepPurple.withValues(alpha: 0.4))),
+            borderSide: BorderSide(color: Colors.deepPurple)),
         contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
         label: _focusNode.hasFocus || _controller.text.isNotEmpty
             ? null

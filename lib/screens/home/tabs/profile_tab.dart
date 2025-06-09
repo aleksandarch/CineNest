@@ -13,21 +13,21 @@ import '../../../widgets/movie_display_cards/standard_movie_card.dart';
 import '../../../widgets/profile_image_widget.dart';
 
 enum ProfileMenuAction {
+  login,
   editProfile,
   logout,
-  deleteAccount,
   reloadMovies,
 }
 
 extension ProfileMenuActionExtension on ProfileMenuAction {
   String get value {
     switch (this) {
+      case ProfileMenuAction.login:
+        return 'login';
       case ProfileMenuAction.editProfile:
         return 'editProfile';
       case ProfileMenuAction.logout:
         return 'logout';
-      case ProfileMenuAction.deleteAccount:
-        return 'deleteAccount';
       case ProfileMenuAction.reloadMovies:
         return 'reloadMovies';
     }
@@ -42,14 +42,16 @@ class ProfileScreen extends StatelessWidget {
   void _handleMenuAction(
       BuildContext context, SignInBloc sb, ProfileMenuAction action) {
     switch (action) {
+      case ProfileMenuAction.login:
+        context.push(RouteConstants.login);
+        break;
       case ProfileMenuAction.editProfile:
         context.push(RouteConstants.editProfile);
         break;
       case ProfileMenuAction.logout:
-        sb.signOut();
-        break;
-      case ProfileMenuAction.deleteAccount:
-        sb.deleteAccount(context);
+        sb.signOut().then((_) {
+          if (context.mounted) context.go(RouteConstants.splash);
+        });
         break;
       case ProfileMenuAction.reloadMovies:
         Boxes.getMovies().clear().then((_) {
@@ -72,16 +74,17 @@ class ProfileScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Profile',
-                style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
+            Padding(
+                padding: const EdgeInsets.only(top: 4, bottom: 10),
+                child: const Text('Profile',
+                    style:
+                        TextStyle(fontSize: 26, fontWeight: FontWeight.bold))),
             sb.isSignedIn
                 ? _buildProfileTabContent(context, sb)
                 : const EmptyPage(
                     title: 'Please sign in to see your bookmarks.',
                     showLoginButton: true,
-                    showReloadButton: true,
-                    artificialExpand: true,
-                  ),
+                    artificialExpand: true),
           ],
         ),
       ),
@@ -100,40 +103,46 @@ class ProfileScreen extends StatelessWidget {
   }
 
   Widget _buildProfileCard(BuildContext context, SignInBloc sb) {
-    return Container(
-      margin: const EdgeInsets.only(top: 10),
-      decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              Colors.deepPurple.withValues(alpha: 0.2),
-              Colors.deepPurple.withValues(alpha: 0.05),
-            ],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          border: Border.all(color: Colors.deepPurple.shade200),
-          borderRadius: BorderRadius.circular(12)),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      child: IntrinsicHeight(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ProfileImageWidget(imageUrl: sb.profileImageUrl),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(sb.username ?? 'Nickname not set',
-                      style: const TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.bold)),
-                  if (sb.userEmail != null) Text(sb.userEmail!),
-                ],
-              ),
+    return GestureDetector(
+      onTap: () => context.push(RouteConstants.editProfile),
+      child: Container(
+        decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Colors.deepPurple.withValues(alpha: 0.2),
+                Colors.deepPurple.withValues(alpha: 0.05),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
-            _buildProfileMenu(context, sb),
-          ],
+            border: Border.all(color: Colors.deepPurple.shade200),
+            borderRadius: BorderRadius.circular(12)),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ProfileImageWidget(imageUrl: sb.profileImageUrl),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(sb.username ?? 'Nickname not set',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold)),
+                    if (sb.userEmail != null)
+                      Text(sb.userEmail!,
+                          maxLines: 1, overflow: TextOverflow.ellipsis),
+                  ],
+                ),
+              ),
+              _buildProfileMenu(context, sb),
+            ],
+          ),
         ),
       ),
     );
@@ -158,22 +167,21 @@ class ProfileScreen extends StatelessWidget {
               color: Colors.deepPurple),
           onSelected: (action) => _handleMenuAction(context, sb, action),
           itemBuilder: (context) => [
-            _buildPopupMenuItem(
-                value: ProfileMenuAction.editProfile,
-                icon: CupertinoIcons.pen,
-                text: 'Edit Profile',
-                iconColor: Colors.deepPurple),
-            _buildPopupMenuItem(
-                value: ProfileMenuAction.logout,
-                icon: CupertinoIcons.square_arrow_right,
-                iconSize: 18,
-                text: 'Logout',
-                iconColor: Colors.deepPurple),
-            _buildPopupMenuItem(
-                value: ProfileMenuAction.deleteAccount,
-                icon: CupertinoIcons.delete,
-                text: 'Delete Account',
-                iconColor: Colors.red.shade700),
+            if (sb.isSignedIn) ...[
+              _buildPopupMenuItem(
+                  value: ProfileMenuAction.editProfile,
+                  icon: CupertinoIcons.pen,
+                  iconSize: 20,
+                  text: 'Edit Profile'),
+              _buildPopupMenuItem(
+                  value: ProfileMenuAction.logout,
+                  icon: CupertinoIcons.square_arrow_right,
+                  text: 'Logout'),
+            ] else
+              _buildPopupMenuItem(
+                  value: ProfileMenuAction.login,
+                  icon: CupertinoIcons.square_arrow_right,
+                  text: 'Login'),
             PopupMenuItem(
                 enabled: false,
                 height: 0,
@@ -181,8 +189,7 @@ class ProfileScreen extends StatelessWidget {
             _buildPopupMenuItem(
                 value: ProfileMenuAction.reloadMovies,
                 icon: CupertinoIcons.refresh,
-                text: 'Reload Movies',
-                iconColor: Colors.deepPurple),
+                text: 'Reload Movies'),
           ],
         ),
       ),
@@ -192,7 +199,7 @@ class ProfileScreen extends StatelessWidget {
   PopupMenuItem<ProfileMenuAction> _buildPopupMenuItem({
     required ProfileMenuAction value,
     required IconData icon,
-    double iconSize = 20,
+    double iconSize = 18,
     required String text,
     Color iconColor = Colors.deepPurple,
   }) {

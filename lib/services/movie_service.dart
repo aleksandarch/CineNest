@@ -16,6 +16,7 @@ class MovieService {
   static MovieService get instance => _instance;
 
   Future<List<MovieModel>> _fetchMovies() async {
+    print('Fetching movies from API...');
     try {
       final response = await http.get(Uri.parse(AppConstants.moviesApiUrl));
 

@@ -1,18 +1,21 @@
+import 'dart:io';
+
+import 'package:cine_nest/boxes/boxes.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 import '../services/bookmark_service.dart';
 
 class SignInBloc extends ChangeNotifier {
+  SignInBloc() {
+    _authStateChanges.listen((user) => _updateUserInfo(user));
+  }
+
+  final _store = FirebaseStorage.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn();
-
-  bool _isLoading = false;
-  bool get isLoading => _isLoading;
-
-  String? _errorMessage;
-  String? get errorMessage => _errorMessage;
 
   String? _userId;
   String? get userId => _userId;
@@ -26,106 +29,146 @@ class SignInBloc extends ChangeNotifier {
   String? _profileImageUrl;
   String? get profileImageUrl => _profileImageUrl;
 
-  bool get isSignedIn => _auth.currentUser != null;
+  bool _isSignedIn = false;
+  bool get isSignedIn => _isSignedIn;
 
   User? get currentUser => _auth.currentUser;
 
-  static Stream<User?> get authStateChanges =>
+  static Stream<User?> get _authStateChanges =>
       FirebaseAuth.instance.authStateChanges();
 
   Future<User?> signInWithEmail(String email, String password) async {
-    _setLoading(true);
     try {
       UserCredential result = await _auth.signInWithEmailAndPassword(
           email: email, password: password);
-      _setLoading(false);
+      _updateUserInfo(result.user);
       return result.user;
     } on FirebaseAuthException catch (e) {
-      _setError(e.message ?? 'Login failed');
+      debugPrint(e.message);
       return null;
-    } finally {
-      _setLoading(false);
     }
   }
 
   Future<User?> signInWithGoogle() async {
-    _setLoading(true);
     try {
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) {
-        _setLoading(false);
-        return null; // user canceled
-      }
+      if (googleUser == null) return null; // User canceled
+
       final GoogleSignInAuthentication googleAuth =
           await googleUser.authentication;
       final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
+          accessToken: googleAuth.accessToken, idToken: googleAuth.idToken);
 
       UserCredential result = await _auth.signInWithCredential(credential);
-      _setLoading(false);
+      _updateUserInfo(result.user);
       return result.user;
     } on FirebaseAuthException catch (e) {
-      _setError(e.message ?? 'Google sign-in failed');
+      debugPrint(e.message);
       return null;
-    } finally {
-      _setLoading(false);
     }
   }
 
   Future<User?> signUp(String nickname, String email, String password) async {
-    _setLoading(true);
     try {
       UserCredential result = await _auth.createUserWithEmailAndPassword(
           email: email, password: password);
 
-      // Update displayName
-      await result.user?.updateDisplayName(nickname);
+      final user = result.user;
+      if (user != null) {
+        // 1. Update Firebase Auth display name
+        await user.updateDisplayName(nickname);
+        await user.reload();
 
-      _setLoading(false);
-      return result.user;
+        _updateUserInfo(_auth.currentUser); // Update local info
+      }
+
+      return user;
     } on FirebaseAuthException catch (e) {
-      _setError(e.message ?? 'Sign up failed');
+      debugPrint(e.message);
       return null;
-    } finally {
-      _setLoading(false);
     }
   }
 
-  Future<void> sendPasswordResetEmail(String email) async {
-    _setLoading(true);
+  Future<String?> uploadProfileImage(File imageFile) async {
+    try {
+      final storageRef = _store.ref().child('user_profiles/$_userId.jpg');
+      final uploadTask = await storageRef.putFile(imageFile);
+      final downloadUrl = await uploadTask.ref.getDownloadURL();
+      return downloadUrl;
+    } catch (e) {
+      debugPrint(e.toString());
+    }
+    return null;
+  }
+
+  Future<bool> sendPasswordResetEmail(String email) async {
     try {
       await _auth.sendPasswordResetEmail(email: email);
+      return true;
     } on FirebaseAuthException catch (e) {
-      _setError(e.message ?? 'Failed to send reset email');
-    } finally {
-      _setLoading(false);
+      debugPrint(e.message);
     }
+    return false;
   }
 
   Future<void> signOut() async {
     await _auth.signOut();
     await _googleSignIn.signOut();
     BookmarkService.unsubscribe();
+    await _clearUserInfo();
     notifyListeners();
   }
 
-  // Future<void> _logout(BuildContext context) async {
-  //   final bloc = context.read<SignInBloc>();
-  //   await bloc.signOut();
-  //   // await Boxes.clear(); // Clear local Hive boxes
-  // }
-  //
-  Future<void> deleteAccount(BuildContext context) async {}
+  Future<bool> deleteAccount(BuildContext context, String password) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return false;
 
-  void _setLoading(bool value) {
-    _isLoading = value;
+      // Re-authenticate
+      final cred = EmailAuthProvider.credential(
+        email: user.email!,
+        password: password,
+      );
+
+      await user.reauthenticateWithCredential(cred);
+
+      await _auth.currentUser?.delete();
+      await _clearUserInfo();
+      BookmarkService.unsubscribe();
+      notifyListeners();
+
+      return true;
+    } on FirebaseAuthException catch (e) {
+      debugPrint(e.message);
+    }
+    return false;
+  }
+
+  Future<void> refreshUser() async {
+    await _auth.currentUser?.reload();
+    _updateUserInfo(_auth.currentUser);
+  }
+
+  Future<void> _updateUserInfo(User? user) async {
+    if (user != null) {
+      _userId = user.uid;
+      _userEmail = user.email;
+      _username = user.displayName;
+      _profileImageUrl = user.photoURL;
+      _isSignedIn = true;
+    } else {
+      await _clearUserInfo();
+    }
     notifyListeners();
   }
 
-  void _setError(String message) {
-    _errorMessage = message;
-    notifyListeners();
+  Future<void> _clearUserInfo() async {
+    _userId = null;
+    _userEmail = null;
+    _username = null;
+    _profileImageUrl = null;
+    _isSignedIn = false;
+    BookmarkService.unsubscribe();
+    await Boxes.clearUserData();
   }
 }

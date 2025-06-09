@@ -17,7 +17,7 @@ dependencies:
   image_picker: ^1.1.2
   image_cropper: ^9.1.0
   flutter_dotenv: ^5.2.1
-  flutter_native_splash: ^2.4.4
+
 
   # UI elements
   lottie: ^3.0.0
@@ -33,6 +33,7 @@ dependencies:
   hive: ^2.2.3
   hive_flutter: ^1.1.0
   firebase_core: ^3.13.1
+  firebase_storage: ^12.4.6
   cloud_firestore: ^5.6.8
   meilisearch: ^0.17.0
 
@@ -51,20 +52,18 @@ dev_dependencies:
   hive_generator: ^2.0.1
   flutter_lints: ^5.0.0
   build_runner: ^2.4.15
+  flutter_native_splash: ^2.4.4
   flutter_launcher_icons: ^0.14.3
   flutter_test:
     sdk: flutter
 
 flutter_native_splash:
-  color: "#0F1518"
+  color: "#673AB7"
+  image: assets/images/splash_screen_app_icon.png
   android: true
   ios: true
-  web: true
-  image: assets/images/splash.png
-  android_12:
-    image: assets/images/android_splash_logo.png
-    color: "#0F1518"
-
+  android_gravity: center
+  ios_content_mode: center
 
 flutter:
   uses-material-design: true
@@ -82,3 +81,25 @@ flutter:
           weight: 400
         - asset: assets/fonts/Nexa-Trial-Bold.ttf
           weight: 700
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  # image_path: assets/images/app_icon.png"
+  # For iOS
+  image_path_ios: "assets/images/app_icon.png"
+  remove_alpha_ios: true # Icons with alpha channel are not allowed in the Apple App Store.
+  image_path_ios_dark_transparent: "assets/images/app_icon.png"
+  desaturate_tinted_to_grayscale_ios: true
+  background_color_ios: "#673AB7"
+  # For Android
+  image_path_android: "assets/images/app_icon.png"
+  min_sdk_android: 24
+  adaptive_icon_background: "#673AB7"
+  adaptive_icon_foreground: "assets/images/app_icon.png"
+  adaptive_icon_foreground_inset: 20
+  web:
+    generate: true
+    image_path: "assets/images/app_icon.png"
+    background_color: "#673AB7"
+    theme_color: "#673AB7"

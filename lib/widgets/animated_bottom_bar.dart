@@ -37,7 +37,7 @@ class AnimatedBottomBar extends StatelessWidget {
       iconHeight: iconHeight,
       controller: scrollController,
       child: BlurryContainer(
-        blur: 8,
+        blur: 12,
         color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.4),
         borderRadius: BorderRadius.circular(50),
         padding: const EdgeInsets.all(6),

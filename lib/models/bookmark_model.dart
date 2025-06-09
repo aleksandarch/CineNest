@@ -11,7 +11,7 @@ class BookmarkModel {
 
     return BookmarkModel(
       movieId: doc.id,
-      createdOn: (data['createdOn'] as Timestamp).toDate(),
+      createdOn: data['addedOn']?.toDate() ?? DateTime.now(),
     );
   }
 }

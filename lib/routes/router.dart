@@ -1,8 +1,11 @@
 import 'package:cine_nest/screens/authentication/forgot_password_screen.dart';
 import 'package:cine_nest/screens/edit_profile_screen.dart';
 import 'package:cine_nest/screens/home/main_screen.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
+import '../blocs/sign_in_bloc.dart';
 import '../boxes/boxes.dart';
 import '../screens/404_screen.dart';
 import '../screens/authentication/login_screen.dart';
@@ -15,6 +18,7 @@ class AppRoutes {
   static final router = GoRouter(
       initialLocation: '/',
       routes: _getRoutes(),
+      redirect: _redirectLogic,
       errorBuilder: (context, state) => const NotFoundScreen());
 
   static List<RouteBase> _getRoutes() => [
@@ -49,4 +53,20 @@ class AppRoutes {
           },
         ),
       ];
+
+  static String? _redirectLogic(BuildContext context, GoRouterState state) {
+    final String location = state.matchedLocation;
+    debugPrint(location);
+
+    final sb = context.read<SignInBloc>();
+    if (sb.isSignedIn) {
+      if (location == RouteConstants.login ||
+          location == RouteConstants.signup ||
+          location == RouteConstants.forgotPassword) {
+        return RouteConstants.main;
+      }
+    }
+
+    return null;
+  }
 }

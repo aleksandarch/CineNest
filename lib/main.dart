@@ -1,3 +1,4 @@
+import 'package:cine_nest/constants/constants.dart';
 import 'package:cine_nest/firebase_options.dart';
 import 'package:cine_nest/routes/router.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -14,8 +15,7 @@ import 'boxes/boxes.dart';
 import 'models/movie_model.dart';
 
 Future<void> main() async {
-  final widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
-  // FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+  WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
@@ -26,8 +26,7 @@ Future<void> main() async {
   Hive.registerAdapter(MovieModelAdapter()); // 0
 
   await Boxes.openMovieBox();
-
-  await Hive.openBox('UserData');
+  await Boxes.openUserDataBox();
 
   SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(statusBarColor: Colors.transparent));
@@ -51,9 +50,8 @@ class CineNestApp extends StatelessWidget {
         scrollBehavior: MyBehavior(),
         title: 'CineNest',
         theme: ThemeData(
-          primarySwatch: Colors.deepPurple,
-          fontFamily: 'Nexa',
-        ),
+            primarySwatch: Colors.deepPurple,
+            fontFamily: AppConstants.fontsFamily),
       ),
     );
   }
