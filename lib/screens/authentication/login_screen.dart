@@ -1,4 +1,4 @@
-import 'package:cine_nest/constants/constants.dart';
+import 'package:cine_nest/widgets/app_logo_widget.dart';
 import 'package:cine_nest/widgets/custom_button.dart';
 import 'package:cine_nest/widgets/custom_text_field.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -7,10 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../../blocs/bookmark_bloc.dart';
 import '../../blocs/sign_in_bloc.dart';
 import '../../routes/router_constants.dart';
-import '../../services/bookmark_service.dart';
 import '../../utils/validators.dart';
 import '../../widgets/text_link_button.dart';
 
@@ -67,17 +65,14 @@ class _LoginScreenState extends State<LoginScreen> {
     final user = await bloc.signInWithGoogle();
 
     if (context.mounted) {
-      _handleLoginResult(
-          context, user, 'Google sign-in failed. Try another method.');
+      _handleLoginResult(context, user, 'Google sign-in canceled.');
     }
   }
 
   void _handleLoginResult(
       BuildContext context, User? user, String errorMessage) {
     if (user != null) {
-      final bb = context.read<BookmarkBloc>();
-      BookmarkService.subscribeToBookmarks(user.uid, bb);
-      context.go(RouteConstants.main);
+      context.replace(RouteConstants.main);
     } else {
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(errorMessage)));
@@ -103,7 +98,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
-                        _buildLogo(),
+                        AppLogoWidget(),
                         _buildTextField(),
                         _buildButtons(),
                       ],
@@ -115,41 +110,6 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildLogo() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Container(
-            height: 70,
-            alignment: Alignment.center,
-            padding: EdgeInsets.only(left: 12, right: 8),
-            decoration: BoxDecoration(
-                color: Colors.deepPurple,
-                borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(36),
-                    bottomLeft: Radius.circular(36))),
-            child: Image.asset('${AppConstants.assetImagePath}app_icon.png',
-                height: 60)),
-        Container(
-          height: 70,
-          alignment: Alignment.center,
-          padding: EdgeInsets.only(left: 10, right: 16),
-          decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border.all(color: Colors.deepPurple),
-              borderRadius: BorderRadius.only(
-                  topRight: Radius.circular(36),
-                  bottomRight: Radius.circular(36))),
-          child: Text(AppConstants.appName,
-              style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.deepPurple)),
-        ),
-      ],
     );
   }
 

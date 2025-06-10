@@ -16,7 +16,6 @@ class MovieService {
   static MovieService get instance => _instance;
 
   Future<List<MovieModel>> _fetchMovies() async {
-    print('Fetching movies from API...');
     try {
       final response = await http.get(Uri.parse(AppConstants.moviesApiUrl));
 
@@ -35,14 +34,12 @@ class MovieService {
   }
 
   Future<void> refreshMovies({bool toEmptyBox = false}) async {
+    final Box<MovieModel> movieBox = Boxes.getMovies();
     try {
-      if (toEmptyBox) {
-        final Box<MovieModel> movieBox = Boxes.getMovies();
-        await movieBox.clear();
-      }
+      if (toEmptyBox) await movieBox.clear();
 
       final List<MovieModel> movies = await _fetchMovies();
-      await Boxes.addMovies(movies);
+      await movieBox.addAll(movies);
     } catch (e) {
       debugPrint('Failed to refresh movies: $e');
     }

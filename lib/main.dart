@@ -6,12 +6,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:provider/src/change_notifier_provider.dart';
-import 'package:provider/src/provider.dart';
+import 'package:provider/provider.dart';
 
 import 'blocs/bookmark_bloc.dart';
 import 'blocs/sign_in_bloc.dart';
 import 'boxes/boxes.dart';
+import 'models/bookmark_model.dart';
 import 'models/movie_model.dart';
 
 Future<void> main() async {
@@ -24,9 +24,11 @@ Future<void> main() async {
   await Hive.initFlutter();
 
   Hive.registerAdapter(MovieModelAdapter()); // 0
+  Hive.registerAdapter(BookmarkModelAdapter()); // 1
 
   await Boxes.openMovieBox();
   await Boxes.openUserDataBox();
+  await Boxes.openBookmarkBox();
 
   SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(statusBarColor: Colors.transparent));

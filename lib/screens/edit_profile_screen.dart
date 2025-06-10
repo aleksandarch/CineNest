@@ -10,7 +10,7 @@ import '../blocs/sign_in_bloc.dart';
 import '../routes/router_constants.dart';
 import '../utils/validators.dart';
 import '../widgets/custom_text_field.dart';
-import '../widgets/profile_image_widget.dart';
+import '../widgets/profile_image.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -62,7 +62,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             builder: (context, constraints) {
               return SingleChildScrollView(
                 child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  constraints: BoxConstraints(
+                      minWidth: constraints.maxWidth,
+                      minHeight: constraints.maxHeight),
                   child: IntrinsicHeight(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -86,7 +88,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       key: _formKey,
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         const SizedBox(height: 10),
-        ProfileImageWidget(
+        ProfileImage(
             imageUrl: sb.profileImageUrl,
             height: 120,
             enableImageSelect: true,
@@ -162,13 +164,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         CustomButton(
             onPressed: () async {
               final confirm = await _showConfirmationDialog(
-                context,
-                'Log Out',
-                'Are you sure you want to log out?',
-              );
-              if (confirm) {
-                await sb.signOut();
-                if (context.mounted) context.go(RouteConstants.splash);
+                  context, 'Log Out', 'Are you sure you want to log out?');
+
+              if (confirm && context.mounted) {
+                await sb.signOut(context);
               }
             },
             title: 'Log Out',

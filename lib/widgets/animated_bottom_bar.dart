@@ -3,7 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
-import '../models/model_bottom_bar_tab.dart';
+import '../models/bottom_bar_tab_model.dart';
 
 class AnimatedBottomBar extends StatelessWidget {
   final ScrollController scrollController;
@@ -19,14 +19,14 @@ class AnimatedBottomBar extends StatelessWidget {
 
   static const double iconHeight = 20.0;
 
-  static final List<ModelBottomBarTab> myTabs = [
-    ModelBottomBarTab(
+  static final List<BottomBarTabModel> myTabs = [
+    BottomBarTabModel(
         selectedIcon: CupertinoIcons.house_fill,
         unselectedIcon: CupertinoIcons.house),
-    ModelBottomBarTab(
+    BottomBarTabModel(
         selectedIcon: CupertinoIcons.search,
         unselectedIcon: CupertinoIcons.search),
-    ModelBottomBarTab(
+    BottomBarTabModel(
         selectedIcon: CupertinoIcons.person,
         unselectedIcon: CupertinoIcons.person),
   ];

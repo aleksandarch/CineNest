@@ -9,13 +9,13 @@ import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:skeleton_text/skeleton_text.dart';
 
-class ProfileImageWidget extends StatefulWidget {
+class ProfileImage extends StatefulWidget {
   final String? imageUrl;
   final double height;
   final bool enableImageSelect;
   final Function(File)? onImageSelected;
 
-  const ProfileImageWidget({
+  const ProfileImage({
     super.key,
     this.imageUrl,
     this.height = 60,
@@ -24,10 +24,10 @@ class ProfileImageWidget extends StatefulWidget {
   });
 
   @override
-  State<ProfileImageWidget> createState() => _ProfileImageWidgetState();
+  State<ProfileImage> createState() => _ProfileImageState();
 }
 
-class _ProfileImageWidgetState extends State<ProfileImageWidget> {
+class _ProfileImageState extends State<ProfileImage> {
   File? _selectedImage;
 
   @override
@@ -38,34 +38,35 @@ class _ProfileImageWidgetState extends State<ProfileImageWidget> {
         onTap: widget.enableImageSelect ? () => imageSourcePicker() : null,
         child: Stack(
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(100),
-              child: _selectedImage != null
-                  ? Image.file(_selectedImage!,
-                      width: widget.height,
-                      height: widget.height,
-                      fit: BoxFit.cover)
-                  : CachedNetworkImage(
-                      imageUrl: widget.imageUrl ?? '',
-                      width: widget.height,
-                      height: widget.height,
-                      fit: BoxFit.cover,
-                      placeholder: (context, url) => SkeletonAnimation(
-                          gradientColor: Colors.deepPurple.shade100,
-                          shimmerColor: Colors.deepPurple.shade200,
-                          borderRadius: BorderRadius.circular(100),
-                          child: Container(
-                              width: widget.height,
-                              height: widget.height,
-                              color: Colors.deepPurple.shade100)),
-                      errorWidget: (context, url, error) => Container(
-                          width: widget.height,
-                          height: widget.height,
-                          color: Colors.deepPurple.shade200,
-                          child: Icon(CupertinoIcons.person,
-                              size: (widget.height / 5 * 3),
-                              color: Colors.white)),
-                    ),
+            Container(
+              decoration: BoxDecoration(
+                  border: Border.all(color: Colors.deepPurple.shade200),
+                  borderRadius: BorderRadius.circular(100)),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(100),
+                child: _selectedImage != null
+                    ? Image.file(_selectedImage!,
+                        width: widget.height,
+                        height: widget.height,
+                        fit: BoxFit.cover)
+                    : widget.imageUrl == null || widget.imageUrl!.isEmpty
+                        ? _emptyImagePlaceholder()
+                        : CachedNetworkImage(
+                            imageUrl: widget.imageUrl!,
+                            width: widget.height,
+                            height: widget.height,
+                            fit: BoxFit.cover,
+                            placeholder: (context, url) => SkeletonAnimation(
+                                gradientColor: Colors.deepPurple.shade100,
+                                shimmerColor: Colors.deepPurple.shade200,
+                                borderRadius: BorderRadius.circular(100),
+                                child: Container(
+                                    width: widget.height,
+                                    height: widget.height,
+                                    color: Colors.deepPurple.shade100)),
+                            errorWidget: (context, url, error) =>
+                                _emptyImagePlaceholder()),
+              ),
             ),
             if (widget.enableImageSelect)
               Positioned(
@@ -85,6 +86,18 @@ class _ProfileImageWidgetState extends State<ProfileImageWidget> {
         ),
       ),
     );
+  }
+
+  Widget _emptyImagePlaceholder() {
+    return Container(
+        width: widget.height,
+        height: widget.height,
+        decoration: BoxDecoration(
+            color: Colors.deepPurple.shade100,
+            borderRadius: BorderRadius.circular(100),
+            border: Border.all(color: Colors.deepPurple.shade200)),
+        child: Icon(CupertinoIcons.person,
+            size: (widget.height / 5 * 3), color: Colors.white));
   }
 
   void imageSourcePicker() {

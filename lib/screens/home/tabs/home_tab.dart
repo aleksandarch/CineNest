@@ -91,7 +91,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildSalute(double saveHorizontalPadding, SignInBloc sb) {
     final now = DateTime.now();
 
-    final Box box = Hive.box('UserData');
+    final Box box = Boxes.getUserData();
     DateTime? lastSaluteDate = box.get('lastSaluteDate') as DateTime?;
 
     bool greetedToday = false;

@@ -1,30 +1,62 @@
+import 'package:cine_nest/boxes/boxes.dart';
 import 'package:flutter/material.dart';
 
 import '../models/bookmark_model.dart';
 import '../services/bookmark_service.dart';
 
 class BookmarkBloc extends ChangeNotifier {
-  final List<BookmarkModel> _bookmarks = [];
+  final _box = Boxes.getBookmarks();
 
-  List<BookmarkModel> get bookmarks => List.unmodifiable(_bookmarks);
+  List<BookmarkModel> get bookmarks => _box.values.toList();
 
-  void updateBookmarks(List<BookmarkModel> newBookmarks) {
-    _bookmarks
-      ..clear()
-      ..addAll(newBookmarks);
+  Future<void> updateBookmarks(List<BookmarkModel> firestoreBookmarks) async {
+    await _box.clear();
+    for (var bookmark in firestoreBookmarks) {
+      await _box.put(bookmark.movieId, bookmark);
+    }
+
     notifyListeners();
   }
 
-  bool isBookmarked(String movieId) {
-    return _bookmarks.any((bookmark) => bookmark.movieId == movieId);
+  Future<void> _addBookmark(String userId, BookmarkModel bookmark) async {
+    await _box.put(bookmark.movieId, bookmark);
+
+    final isSuccessful = await BookmarkService.addBookmark(
+        userId: userId, movieId: bookmark.movieId);
+    if (!isSuccessful) await _box.delete(bookmark.movieId);
+
+    notifyListeners();
   }
 
-  Future<void> toggleBookmark(
-      {required String userId, required String movieId}) async {
+  Future<void> _removeBookmark(String userId, BookmarkModel bookmark) async {
+    await _box.delete(bookmark.movieId);
+
+    final isSuccessful = await BookmarkService.removeBookmark(
+        userId: userId, movieId: bookmark.movieId);
+    if (!isSuccessful) _box.put(bookmark.movieId, bookmark);
+
+    notifyListeners();
+  }
+
+  void toggleBookmark({required String userId, required String movieId}) {
+    final bookmark = bookmarks.firstWhere(
+      (bookmark) => bookmark.movieId == movieId,
+      orElse: () => BookmarkModel(movieId: movieId, createdOn: DateTime.now()),
+    );
+
     if (isBookmarked(movieId)) {
-      await BookmarkService.removeBookmark(userId: userId, movieId: movieId);
+      _removeBookmark(userId, bookmark);
     } else {
-      await BookmarkService.addBookmark(userId: userId, movieId: movieId);
+      _addBookmark(userId, bookmark);
     }
+  }
+
+  bool isBookmarked(String movieId) => _box.containsKey(movieId);
+
+  Future<void> clear() async {
+    BookmarkService.unsubscribe();
+    await _box.clear();
+
+    notifyListeners();
   }
 }

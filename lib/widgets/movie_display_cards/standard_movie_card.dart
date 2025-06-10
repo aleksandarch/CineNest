@@ -1,20 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
 import '../../models/movie_model.dart';
 import '../../routes/router_constants.dart';
-import '../movie_poster_widget.dart';
+import '../movie_poster.dart';
 
 class StandardMovieCard extends StatelessWidget {
   final MovieModel movie;
   final bool showRating;
   final Widget? additionalWidget;
+  final DateTime? addedOn;
 
   const StandardMovieCard({
     super.key,
     required this.movie,
     this.showRating = true,
     this.additionalWidget,
+    this.addedOn,
   });
 
   @override
@@ -40,6 +43,7 @@ class StandardMovieCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis),
                   if (showRating && movie.imdbRating != null)
                     _buildRatingStars(movie.imdbRating!),
+                  if (addedOn != null) _buildAddedOn(addedOn!.toLocal()),
                   if (additionalWidget != null) additionalWidget!,
                   Text(movie.storyline,
                       maxLines: 2,
@@ -76,5 +80,31 @@ class StandardMovieCard extends StatelessWidget {
             style: TextStyle(fontWeight: FontWeight.bold)),
       ],
     );
+  }
+
+  Widget _buildAddedOn(DateTime addedOn) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(Duration(days: 1));
+    final addedDate = DateTime(addedOn.year, addedOn.month, addedOn.day);
+
+    String formatted;
+
+    if (addedDate == today) {
+      formatted = 'Today ${DateFormat.Hm().format(addedOn)}';
+    } else if (addedDate == yesterday) {
+      formatted = 'Yesterday ${DateFormat.Hm().format(addedOn)}';
+    } else if (now.difference(addedOn).inDays < 7) {
+      // Last X day
+      formatted =
+          'Last ${DateFormat.EEEE().format(addedOn)} ${DateFormat.Hm().format(addedOn)}';
+    } else if (now.difference(addedOn).inDays < 365) {
+      formatted = DateFormat('dd.MM').format(addedOn);
+    } else {
+      formatted = 'More than a year ago';
+    }
+
+    return Text('Added $formatted',
+        style: const TextStyle(color: Colors.black54));
   }
 }

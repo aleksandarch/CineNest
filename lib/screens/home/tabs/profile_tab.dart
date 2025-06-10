@@ -1,3 +1,4 @@
+import 'package:cine_nest/models/bookmark_model.dart';
 import 'package:cine_nest/models/movie_model.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -10,14 +11,9 @@ import '../../../boxes/boxes.dart';
 import '../../../routes/router_constants.dart';
 import '../../../widgets/empty_page.dart';
 import '../../../widgets/movie_display_cards/standard_movie_card.dart';
-import '../../../widgets/profile_image_widget.dart';
+import '../../../widgets/profile_image.dart';
 
-enum ProfileMenuAction {
-  login,
-  editProfile,
-  logout,
-  reloadMovies,
-}
+enum ProfileMenuAction { login, editProfile, logout, reloadMovies }
 
 extension ProfileMenuActionExtension on ProfileMenuAction {
   String get value {
@@ -49,15 +45,12 @@ class ProfileScreen extends StatelessWidget {
         context.push(RouteConstants.editProfile);
         break;
       case ProfileMenuAction.logout:
-        sb.signOut().then((_) {
-          if (context.mounted) context.go(RouteConstants.splash);
-        });
+        sb.signOut(context);
         break;
       case ProfileMenuAction.reloadMovies:
-        Boxes.getMovies().clear().then((_) {
+        Boxes.clearMovies().then((_) {
           if (context.mounted) context.go(RouteConstants.splash);
         });
-
         break;
     }
   }
@@ -105,43 +98,47 @@ class ProfileScreen extends StatelessWidget {
   Widget _buildProfileCard(BuildContext context, SignInBloc sb) {
     return GestureDetector(
       onTap: () => context.push(RouteConstants.editProfile),
-      child: Container(
-        decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                Colors.deepPurple.withValues(alpha: 0.2),
-                Colors.deepPurple.withValues(alpha: 0.05),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            border: Border.all(color: Colors.deepPurple.shade200),
-            borderRadius: BorderRadius.circular(12)),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ProfileImageWidget(imageUrl: sb.profileImageUrl),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(sb.username ?? 'Nickname not set',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.bold)),
-                    if (sb.userEmail != null)
-                      Text(sb.userEmail!,
-                          maxLines: 1, overflow: TextOverflow.ellipsis),
-                  ],
-                ),
+      child: Align(
+        alignment: Alignment.center,
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 450),
+          decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.deepPurple.withValues(alpha: 0.2),
+                  Colors.deepPurple.withValues(alpha: 0.05),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-              _buildProfileMenu(context, sb),
-            ],
+              border: Border.all(color: Colors.deepPurple.shade200),
+              borderRadius: BorderRadius.circular(12)),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ProfileImage(imageUrl: sb.profileImageUrl),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(sb.username ?? 'Nickname not set',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.bold)),
+                      if (sb.userEmail != null)
+                        Text(sb.userEmail!,
+                            maxLines: 1, overflow: TextOverflow.ellipsis),
+                    ],
+                  ),
+                ),
+                _buildProfileMenu(context, sb),
+              ],
+            ),
           ),
         ),
       ),
@@ -248,6 +245,7 @@ class ProfileScreen extends StatelessWidget {
   }
 
   Widget _buildBookmarksGrid(BuildContext context, List<MovieModel> movies) {
+    final bookmarks = context.read<BookmarkBloc>().bookmarks;
     if (movies.isEmpty) {
       return const Padding(
           padding: EdgeInsets.only(top: 80),
@@ -264,7 +262,14 @@ class ProfileScreen extends StatelessWidget {
           crossAxisSpacing: 12,
           mainAxisSpacing: 25),
       itemCount: movies.length,
-      itemBuilder: (context, index) => StandardMovieCard(movie: movies[index]),
+      itemBuilder: (context, index) {
+        final movie = movies[index];
+        final bookmark = bookmarks.firstWhere((b) => b.movieId == movie.id,
+            orElse: () => BookmarkModel.empty());
+        return StandardMovieCard(
+            movie: movies[index],
+            addedOn: bookmark.movieId.isEmpty ? null : bookmark.createdOn);
+      },
     );
   }
 }

@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../../blocs/sign_in_bloc.dart';
 import '../../routes/router_constants.dart';
 import '../../utils/validators.dart';
+import '../../widgets/app_logo_widget.dart';
 import '../../widgets/text_link_button.dart';
 
 class SignupScreen extends StatefulWidget {
@@ -61,7 +62,7 @@ class _SignupScreenState extends State<SignupScreen> {
     final user = await sb.signUp(nickname, email, password);
     if (mounted) {
       if (user != null) {
-        context.go(RouteConstants.main);
+        context.replace(RouteConstants.main);
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Sign up failed. Try again.')));
@@ -85,6 +86,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
+                        AppLogoWidget(),
                         _buildTextField(),
                         CustomButton(onPressed: _signup, title: 'Sign Up'),
                         TextLinkButton(

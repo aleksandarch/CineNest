@@ -3,10 +3,12 @@ class AppConstants {
 
   static const String moviesApiUrl =
       'https://raw.githubusercontent.com/FEND16/movie-json-data/master/json/movies-coming-soon.json';
+  static const String wikipediaSearchUrl =
+      'https://en.wikipedia.org/wiki/Special:Search?search=';
 
   static String assetImagePath = 'assets/images/';
   static String assetIconsPath = 'assets/icons/';
   static String assetAnimationsPath = 'assets/animation_files/';
 
-  static const String fontsFamily = 'Nexa';
+  static const String fontsFamily = 'PlusJakarta';
 }

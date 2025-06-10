@@ -4,13 +4,23 @@ import 'package:cine_nest/boxes/boxes.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:provider/provider.dart';
 
+import '../routes/router_constants.dart';
 import '../services/bookmark_service.dart';
+import 'bookmark_bloc.dart';
 
 class SignInBloc extends ChangeNotifier {
   SignInBloc() {
-    _authStateChanges.listen((user) => _updateUserInfo(user));
+    _authStateChanges.listen((user) {
+      if (user == null) {
+        _handleSignOutCleanup();
+      } else {
+        _updateUserInfo(user);
+      }
+    });
   }
 
   final _store = FirebaseStorage.instance;
@@ -75,11 +85,13 @@ class SignInBloc extends ChangeNotifier {
 
       final user = result.user;
       if (user != null) {
-        // 1. Update Firebase Auth display name
-        await user.updateDisplayName(nickname);
-        await user.reload();
+        if (user.displayName == null || user.displayName!.isEmpty) {
+          // 1. Update Firebase Auth display name if not set
+          await user.updateDisplayName(nickname);
+          await user.reload();
+        }
 
-        _updateUserInfo(_auth.currentUser); // Update local info
+        _updateUserInfo(_auth.currentUser);
       }
 
       return user;
@@ -111,10 +123,21 @@ class SignInBloc extends ChangeNotifier {
     return false;
   }
 
-  Future<void> signOut() async {
+  Future<void> signOut(BuildContext context) async {
+    Provider.of<BookmarkBloc>(context, listen: false).clear();
+
     await _auth.signOut();
     await _googleSignIn.signOut();
+    await _clearUserInfo();
+
+    notifyListeners();
+    if (context.mounted) context.replace(RouteConstants.main);
+  }
+
+  Future<void> _handleSignOutCleanup() async {
     BookmarkService.unsubscribe();
+    await Boxes.clearBookmarks();
+
     await _clearUserInfo();
     notifyListeners();
   }
@@ -125,18 +148,18 @@ class SignInBloc extends ChangeNotifier {
       if (user == null) return false;
 
       // Re-authenticate
-      final cred = EmailAuthProvider.credential(
-        email: user.email!,
-        password: password,
-      );
-
+      final cred =
+          EmailAuthProvider.credential(email: user.email!, password: password);
       await user.reauthenticateWithCredential(cred);
 
       await _auth.currentUser?.delete();
       await _clearUserInfo();
-      BookmarkService.unsubscribe();
-      notifyListeners();
 
+      if (context.mounted) {
+        Provider.of<BookmarkBloc>(context, listen: false).clear();
+      }
+
+      notifyListeners();
       return true;
     } on FirebaseAuthException catch (e) {
       debugPrint(e.message);
@@ -168,7 +191,6 @@ class SignInBloc extends ChangeNotifier {
     _username = null;
     _profileImageUrl = null;
     _isSignedIn = false;
-    BookmarkService.unsubscribe();
     await Boxes.clearUserData();
   }
 }

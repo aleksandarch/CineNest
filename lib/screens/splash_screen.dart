@@ -28,7 +28,7 @@ class SplashScreen extends StatelessWidget {
     _initApp(context);
 
     return Scaffold(
-      backgroundColor: Colors.deepPurple,
+      backgroundColor: Color(0xFF6a1a9a),
       body: SafeArea(
         child: Container(
           padding: EdgeInsets.symmetric(horizontal: 20),

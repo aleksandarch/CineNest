@@ -1,11 +1,9 @@
 import 'package:cine_nest/blocs/sign_in_bloc.dart';
 import 'package:cine_nest/screens/home/tabs/search_tab.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../../blocs/bookmark_bloc.dart';
-import '../../routes/router_constants.dart';
 import '../../services/bookmark_service.dart';
 import '../../widgets/animated_bottom_bar.dart';
 import 'tabs/home_tab.dart';
@@ -49,8 +47,8 @@ class _MainScreenState extends State<MainScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        resizeToAvoidBottomInset: false,
         extendBodyBehindAppBar: true,
+        resizeToAvoidBottomInset: false,
         extendBody: true,
         bottomNavigationBar: Align(
             alignment: Alignment.bottomCenter,

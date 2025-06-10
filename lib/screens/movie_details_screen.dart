@@ -1,5 +1,9 @@
+import 'dart:ui';
+
+import 'package:cine_nest/constants/constants.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
@@ -7,176 +11,309 @@ import '../blocs/bookmark_bloc.dart';
 import '../blocs/sign_in_bloc.dart';
 import '../models/movie_model.dart';
 import '../routes/router_constants.dart';
+import '../widgets/actor_card.dart';
+import '../widgets/content_rating_info.dart';
+import '../widgets/movie_poster.dart';
+import '../widgets/rating_gauge.dart';
 
-class MovieDetailsScreen extends StatelessWidget {
+class MovieDetailsScreen extends StatefulWidget {
   final MovieModel movie;
 
   const MovieDetailsScreen({super.key, required this.movie});
 
-  void _onBookmarkToggle(BuildContext context, SignInBloc sb, BookmarkBloc bb) {
-    if (sb.isSignedIn) {
-      bb.toggleBookmark(userId: sb.userId!, movieId: movie.id);
-    } else {
-      context.push(RouteConstants.login);
+  @override
+  State<MovieDetailsScreen> createState() => _MovieDetailsScreenState();
+}
+
+class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
+  final ScrollController _scrollController = ScrollController();
+  bool _isScrolledEnough = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_handleScroll);
+  }
+
+  void _handleScroll() {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final scrollOffset = _scrollController.offset;
+
+    final isNowScrolledEnough = scrollOffset > screenHeight * 0.45;
+
+    if (_isScrolledEnough != isNowScrolledEnough) {
+      setState(() {
+        _isScrolledEnough = isNowScrolledEnough;
+      });
     }
   }
 
   @override
+  void dispose() {
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.dark);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    return Scaffold(
+        extendBodyBehindAppBar: true,
+        appBar: _buildAppBar(context),
+        body: SingleChildScrollView(
+          controller: _scrollController,
+          physics: const ClampingScrollPhysics(),
+          child: Column(children: [
+            _buildMoviePoster(context),
+            _buildMovieData(context),
+          ]),
+        ));
+  }
+
+  AppBar _buildAppBar(BuildContext context) {
     final sb = context.read<SignInBloc>();
     final bb = context.watch<BookmarkBloc>();
-    final isBookmarked = bb.isBookmarked(movie.id);
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(movie.title, overflow: TextOverflow.ellipsis),
-        actions: [
-          IconButton(
-              padding: EdgeInsets.zero,
-              splashColor: Colors.transparent,
-              highlightColor: Colors.transparent,
-              icon: Icon(isBookmarked
-                  ? CupertinoIcons.bookmark_fill
-                  : CupertinoIcons.bookmark),
-              onPressed: () => _onBookmarkToggle(context, sb, bb)),
+    final isBookmarked = bb.isBookmarked(widget.movie.id);
+
+    final iconColor = _isScrolledEnough ? Colors.black : Colors.white;
+
+    void onBookmarkToggle(BuildContext context) {
+      if (sb.isSignedIn) {
+        bb.toggleBookmark(userId: sb.userId!, movieId: widget.movie.id);
+      } else {
+        context.push(RouteConstants.login);
+      }
+    }
+
+    return AppBar(
+      backgroundColor: _isScrolledEnough
+          ? Theme.of(context).scaffoldBackgroundColor
+          : Colors.transparent,
+      surfaceTintColor: Colors.transparent,
+      leading: IconButton(
+          splashColor: Colors.transparent,
+          highlightColor: Colors.transparent,
+          icon: Icon(Icons.adaptive.arrow_back, color: iconColor),
+          onPressed: () => context.pop()),
+      actions: [
+        IconButton(
+            splashColor: Colors.transparent,
+            highlightColor: Colors.transparent,
+            icon: Hero(
+                tag: 'bookmark-icon-${widget.movie.id}',
+                child: Icon(
+                    isBookmarked
+                        ? CupertinoIcons.bookmark_fill
+                        : CupertinoIcons.bookmark,
+                    color: iconColor)),
+            onPressed: () => onBookmarkToggle(context)),
+      ],
+    );
+  }
+
+  Widget _buildMoviePoster(BuildContext context) {
+    final double posterHeight = MediaQuery.of(context).size.height * 0.6;
+
+    return SizedBox(
+      width: double.infinity,
+      height: posterHeight,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Padding(
+              padding: const EdgeInsets.only(bottom: 20),
+              child: ImageFiltered(
+                  imageFilter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                  child: Image.network(widget.movie.posterUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) =>
+                          const SizedBox()))),
+          Container(
+              margin: const EdgeInsets.only(bottom: 4),
+              decoration: BoxDecoration(
+                color: Colors.deepPurple.shade200,
+                gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black54,
+                      Colors.transparent,
+                      Theme.of(context)
+                          .scaffoldBackgroundColor
+                          .withValues(alpha: 0.1),
+                      Theme.of(context).scaffoldBackgroundColor
+                    ]),
+              )),
+          Padding(
+            padding: EdgeInsets.only(
+                top: MediaQuery.of(context).padding.top + 20,
+                left: 20,
+                right: 20),
+            child: Column(
+              children: [
+                Flexible(
+                    child: Container(
+                        alignment: Alignment.bottomCenter,
+                        child: MoviePoster(
+                            posterUrl: widget.movie.posterUrl,
+                            movieId: widget.movie.id,
+                            posterHeight: posterHeight * 0.72,
+                            borderRadius: 16))),
+                const SizedBox(height: 20),
+                Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    runAlignment: WrapAlignment.center,
+                    alignment: WrapAlignment.center,
+                    children: List.generate(
+                      widget.movie.genres.length,
+                      (index) => Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 4),
+                          decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: Colors.deepPurple)),
+                          child: Text(widget.movie.genres[index],
+                              style:
+                                  const TextStyle(color: Colors.deepPurple))),
+                    )),
+              ],
+            ),
+          ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Hero(
-              tag: movie.id,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.network(
-                  movie.posterUrl,
-                  height: 300,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) =>
-                      const Icon(Icons.broken_image, size: 100),
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
+    );
+  }
 
-            // Title
-            Text(
-              movie.title,
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
+  Widget _buildMovieData(BuildContext context) {
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          const SizedBox(height: 12),
+          Text(widget.movie.title,
+              style:
+                  const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
 
+          if (widget.movie.originalTitle != null)
+            Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text('(${widget.movie.originalTitle})',
+                    style: const TextStyle(fontSize: 16))),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(widget.movie.year,
+                  style: TextStyle(
+                      fontSize: 20,
+                      color: Colors.deepPurple,
+                      fontWeight: FontWeight.bold)),
+              if (widget.movie.contentRating != null)
+                ContentRatingInfo(contentRating: widget.movie.contentRating!),
+            ],
+          ),
+          Divider(color: Colors.deepPurple.shade200, height: 30),
+          const Text('Storyline',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 6),
+          Text(widget.movie.storyline),
+          Divider(color: Colors.deepPurple.shade200, height: 30),
+          if (widget.movie.actors.isNotEmpty) ...[
+            const Text('Cast',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-
-            // Release Date and Duration
-            Row(
-              children: [
-                if (movie.releaseDate.isNotEmpty)
-                  Text('Release: ${movie.releaseDate}'),
-                if (movie.duration != null) ...[
-                  const SizedBox(width: 16),
-                  Text('Duration: ${movie.duration}'),
-                ],
-              ],
-            ),
-
-            const SizedBox(height: 8),
-
-            // Content Rating and IMDb Rating
-            Row(
-              children: [
-                if (movie.contentRating != null)
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(movie.contentRating!),
-                  ),
-                if (movie.imdbRating != null) ...[
-                  const SizedBox(width: 16),
-                  Row(
-                    children: [
-                      const Icon(Icons.star, color: Colors.amber),
-                      const SizedBox(width: 4),
-                      Text('${movie.imdbRating}/10'),
-                    ],
-                  ),
-                ],
-              ],
-            ),
-
-            const SizedBox(height: 16),
-
-            // Genres
             Wrap(
-              spacing: 8,
-              children: movie.genres.map((genre) {
-                return Chip(
-                  label: Text(genre),
-                  backgroundColor: Colors.blue.shade100,
-                );
-              }).toList(),
-            ),
-
-            const SizedBox(height: 16),
-
-            // Storyline
-            if (movie.storyline.isNotEmpty) ...[
-              const Text(
-                'Storyline',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              Text(movie.storyline),
-            ],
-
-            const SizedBox(height: 16),
-
-            // Actors
-            if (movie.actors.isNotEmpty) ...[
-              const Text(
-                'Cast',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
                 spacing: 8,
-                runSpacing: 4,
-                children: movie.actors.map((actor) {
-                  return Chip(
-                    label: Text(actor),
-                    backgroundColor: Colors.green.shade100,
-                  );
-                }).toList(),
-              ),
-            ],
-
-            const SizedBox(height: 16),
-
-            // Ratings list
-            if (movie.ratings.isNotEmpty) ...[
-              const Text(
-                'Ratings',
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                children: movie.ratings.map((rating) {
-                  return Chip(
-                    label: Text('$rating/10'),
-                    backgroundColor: Colors.orange.shade100,
-                  );
-                }).toList(),
-              ),
-            ],
+                runSpacing: 10,
+                children: widget.movie.actors
+                    .map((actor) => WikipediaSearchButton(actorName: actor))
+                    .toList()),
           ],
-        ),
+          Divider(color: Colors.deepPurple.shade200, height: 30),
+          const Text('More Information',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+
+          if (widget.movie.releaseDate.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                Text('Release: '),
+                Text(formatReleaseDate(widget.movie.releaseDate),
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
+              ],
+            )
+          ],
+
+          if (widget.movie.duration != null) ...[
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                Text('Duration: '),
+                Text(formatIsoDuration(widget.movie.duration!),
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
+              ],
+            ),
+          ],
+
+          // Content Rating and IMDb Rating
+          if (widget.movie.imdbRating != null) ...[
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Image.asset('${AppConstants.assetImagePath}imbd_logo.png',
+                    height: 20),
+                const SizedBox(width: 6),
+                Text('${widget.movie.imdbRating}',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+                Text(' | 10', style: TextStyle(color: Colors.black54)),
+              ],
+            )
+          ],
+          _buildRatingGauge(),
+        ]),
       ),
     );
+  }
+
+  Widget _buildRatingGauge() {
+    final double rating = widget.movie.ratings.isNotEmpty
+        ? widget.movie.ratings.reduce((a, b) => a + b) /
+            widget.movie.ratings.length
+        : 0.0;
+    final int totalVotes = widget.movie.ratings.length;
+    return Container(
+        alignment: Alignment.center,
+        padding: const EdgeInsets.only(top: 20, bottom: 20),
+        child: RatingGauge(rating: rating, totalVotes: totalVotes));
+  }
+
+  String formatReleaseDate(String date) {
+    final dateTime = DateTime.tryParse(date);
+    if (dateTime != null) {
+      return '${dateTime.month.toString().padLeft(2, '0')}.${dateTime.day.toString().padLeft(2, '0')} ${dateTime.year}';
+    }
+    return date;
+  }
+
+  String formatIsoDuration(String iso) {
+    final regex = RegExp(r'^PT(\d+)M$');
+    final match = regex.firstMatch(iso);
+
+    if (match != null) {
+      final totalMinutes = int.tryParse(match.group(1)!);
+      if (totalMinutes != null) {
+        final hours = totalMinutes ~/ 60;
+        final minutes = totalMinutes % 60;
+        if (hours > 0) {
+          return '${hours}h ${minutes}m';
+        } else {
+          return '${minutes}m';
+        }
+      }
+    }
+
+    return 'Unknown';
   }
 }
