@@ -1,42 +1,60 @@
-import 'package:flutter/cupertino.dart';
+import 'dart:convert';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:meilisearch/meilisearch.dart';
+import 'package:http/http.dart' as http;
 
 class MeiliSearchService {
   static final MeiliSearchService _instance = MeiliSearchService._internal();
 
   factory MeiliSearchService() => _instance;
 
-  late final MeiliSearchClient client;
+  final String _baseUrl = dotenv.env['MEILISEARCH_HOST_URL'] ?? '';
+  final String _apiKey = dotenv.env['MEILISEARCH_API_KEY'] ?? '';
 
-  MeiliSearchService._internal() {
-    client = MeiliSearchClient(
-      dotenv.env['MEILISEARCH_HOST_URL'] ?? '',
-      dotenv.env['MEILISEARCH_API_KEY'] ?? '',
-    );
-  }
+  MeiliSearchService._internal();
 
-  MeiliSearchIndex get moviesIndex => client.index('movies');
+  Future<List<String>> searchInMovies({
+    required String query,
+    bool useSemantic = true,
+  }) async {
+    final url = Uri.parse('$_baseUrl/indexes/movies/search');
 
-  Future<List<String>> searchInMovies(
-      {required String query, bool useSemantic = true}) async {
-    final index = moviesIndex;
+    // Use semantic search only on non-web platforms
+    final Map<String, dynamic> body = {
+      'q': query,
+      'attributesToRetrieve': ['id'],
+    };
 
-    final searchOptions = useSemantic
-        ? SearchQuery(
-            attributesToRetrieve: ['id'],
-            hybrid: HybridSearch(embedder: 'openai', semanticRatio: 0.7))
-        : SearchQuery(attributesToRetrieve: ['id']);
+    if (useSemantic && !kIsWeb) {
+      body['hybrid'] = {
+        'embedder': 'openai',
+        'semanticRatio': 0.7,
+      };
+    }
 
     try {
-      final Searcheable response = await index.search(query, searchOptions);
-      if (response.hits.isNotEmpty) {
-        return List<String>.from(
-            response.hits.map((hit) => hit['id'].toString()));
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $_apiKey',
+        },
+        body: jsonEncode(body),
+      );
+
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+        final hits = decoded['hits'] as List<dynamic>;
+        return hits.map((hit) => hit['id'].toString()).toList();
+      } else {
+        debugPrint(
+            'MeiliSearch error: ${response.statusCode} ${response.body}');
       }
     } catch (e) {
-      debugPrint('Error during MeiliSearch: $e');
+      debugPrint('Exception during MeiliSearch: $e');
     }
+
     return [];
   }
 }

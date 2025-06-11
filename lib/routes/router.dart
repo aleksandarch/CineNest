@@ -1,6 +1,3 @@
-import 'package:cine_nest/screens/authentication/forgot_password_screen.dart';
-import 'package:cine_nest/screens/edit_profile_screen.dart';
-import 'package:cine_nest/screens/home/main_screen.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -8,8 +5,11 @@ import 'package:provider/provider.dart';
 import '../blocs/sign_in_bloc.dart';
 import '../boxes/boxes.dart';
 import '../screens/404_screen.dart';
+import '../screens/authentication/forgot_password_screen.dart';
 import '../screens/authentication/login_screen.dart';
 import '../screens/authentication/signup_screen.dart';
+import '../screens/edit_profile_screen.dart';
+import '../screens/home/main_screen.dart';
 import '../screens/movie_details_screen.dart';
 import '../screens/splash_screen.dart';
 import 'router_constants.dart';

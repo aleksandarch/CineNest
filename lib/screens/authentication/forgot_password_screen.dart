@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../blocs/sign_in_bloc.dart';
 import '../../utils/validators.dart';
 import '../../widgets/custom_text_field.dart';
+import '../../widgets/widgets_for_large_screen.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -49,44 +50,23 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Forgot Password')),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              return SingleChildScrollView(
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                  child: IntrinsicHeight(
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const SizedBox(), // Top Spacer
-                          CustomTextField(
-                              hintText: 'Enter Your Email Address',
-                              onSubmit: (_) => _sendResetEmail(),
-                              controller: _emailController,
-                              keyboardType: TextInputType.emailAddress,
-                              textInputAction: TextInputAction.next,
-                              validator: Validators.validateEmail,
-                              title: 'Email'),
-                          const SizedBox(),
-                          Padding(
-                              padding: const EdgeInsets.only(bottom: 6),
-                              child: CustomButton(
-                                  onPressed: _sendResetEmail,
-                                  title: 'Send Reset Email')),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
+      body: WidgetsForLargeScreen(
+        formKey: _formKey,
+        children: [
+          CustomTextField(
+              hintText: 'Enter Your Email Address',
+              onSubmit: (_) => _sendResetEmail(),
+              controller: _emailController,
+              keyboardType: TextInputType.emailAddress,
+              textInputAction: TextInputAction.next,
+              validator: Validators.validateEmail,
+              title: 'Email'),
+          const SizedBox(),
+          Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: CustomButton(
+                  onPressed: _sendResetEmail, title: 'Send Reset Email')),
+        ],
       ),
     );
   }

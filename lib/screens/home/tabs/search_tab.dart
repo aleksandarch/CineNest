@@ -1,12 +1,12 @@
-import 'package:cine_nest/constants/constants.dart';
 import 'package:cine_nest/models/movie_model.dart';
-import 'package:cine_nest/widgets/empty_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 
 import '../../../boxes/boxes.dart';
+import '../../../constants/constants.dart';
 import '../../../services/meilisearch_service.dart';
 import '../../../widgets/animated_search_field.dart';
+import '../../../widgets/empty_page.dart';
 import '../../../widgets/loader.dart';
 import '../../../widgets/movie_display_cards/standard_movie_card.dart';
 

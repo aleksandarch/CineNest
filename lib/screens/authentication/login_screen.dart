@@ -2,7 +2,6 @@ import 'package:cine_nest/widgets/app_logo_widget.dart';
 import 'package:cine_nest/widgets/custom_button.dart';
 import 'package:cine_nest/widgets/custom_text_field.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -11,6 +10,7 @@ import '../../blocs/sign_in_bloc.dart';
 import '../../routes/router_constants.dart';
 import '../../utils/validators.dart';
 import '../../widgets/text_link_button.dart';
+import '../../widgets/widgets_for_large_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -85,59 +85,39 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(title: const Text('Login')),
-      body: SafeArea(
-        maintainBottomViewPadding: true,
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 20),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              return SingleChildScrollView(
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                  child: IntrinsicHeight(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        AppLogoWidget(),
-                        _buildTextField(),
-                        _buildButtons(),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
+      body: WidgetsForLargeScreen(
+        formKey: _formKey,
+        children: [
+          AppLogoWidget(),
+          _buildTextField(),
+          _buildButtons(),
+        ],
       ),
     );
   }
 
   Widget _buildTextField() {
-    return Form(
-      key: _formKey,
-      child: Column(
-        children: [
-          CustomTextField(
-              hintText: 'Enter Your Email Address',
-              onSubmit: (_) {},
-              controller: _emailController,
-              keyboardType: TextInputType.emailAddress,
-              textInputAction: TextInputAction.next,
-              validator: Validators.validateEmail,
-              title: 'Email'),
-          const SizedBox(height: 14),
-          CustomTextField(
-              hintText: 'Enter Your Password',
-              onSubmit: (_) {},
-              controller: _passwordController,
-              keyboardType: TextInputType.text,
-              textInputAction: TextInputAction.done,
-              validator: Validators.validatePassword,
-              title: 'Password',
-              toObscure: true),
-        ],
-      ),
+    return Column(
+      children: [
+        CustomTextField(
+            hintText: 'Enter Your Email Address',
+            onSubmit: (_) {},
+            controller: _emailController,
+            keyboardType: TextInputType.emailAddress,
+            textInputAction: TextInputAction.next,
+            validator: Validators.validateEmail,
+            title: 'Email'),
+        const SizedBox(height: 14),
+        CustomTextField(
+            hintText: 'Enter Your Password',
+            onSubmit: (_) {},
+            controller: _passwordController,
+            keyboardType: TextInputType.text,
+            textInputAction: TextInputAction.done,
+            validator: Validators.validatePassword,
+            title: 'Password',
+            toObscure: true),
+      ],
     );
   }
 
@@ -150,13 +130,12 @@ class _LoginScreenState extends State<LoginScreen> {
             },
             title: 'Login'),
         const SizedBox(height: 4),
-        if (!kIsWeb)
-          CustomButton(
-              onPressed: () async {
-                if (!_isLoading) await _loginWithGoogle(context);
-              },
-              title: 'Sign in with Google',
-              inverseColors: true),
+        CustomButton(
+            onPressed: () async {
+              if (!_isLoading) await _loginWithGoogle(context);
+            },
+            title: 'Sign in with Google',
+            inverseColors: true),
         const SizedBox(height: 26),
         Column(
           children: [

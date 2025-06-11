@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:ui';
 
 import 'package:cine_nest/constants/constants.dart';
@@ -50,7 +51,9 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
 
   @override
   void dispose() {
-    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.dark);
+    if (Platform.isIOS) {
+      SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.dark);
+    }
     _scrollController.dispose();
     super.dispose();
   }
@@ -189,37 +192,112 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
     return SafeArea(
       top: false,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const SizedBox(height: 12),
-          Text(widget.movie.title,
-              style:
-                  const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: MediaQuery.of(context).size.width > 700
+              ? _tabletView()
+              : _mobileView()),
+    );
+  }
 
-          if (widget.movie.originalTitle != null)
-            Padding(
-                padding: const EdgeInsets.only(top: 6),
-                child: Text('(${widget.movie.originalTitle})',
-                    style: const TextStyle(fontSize: 16))),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+  Widget _tabletView() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _mainTitle(),
+        const SizedBox(height: 30),
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(widget.movie.year,
-                  style: TextStyle(
-                      fontSize: 20,
-                      color: Colors.deepPurple,
-                      fontWeight: FontWeight.bold)),
-              if (widget.movie.contentRating != null)
-                ContentRatingInfo(contentRating: widget.movie.contentRating!),
+              Expanded(
+                flex: 2,
+                child: Column(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildStoryline(),
+                      const SizedBox(height: 20),
+                      _buildCastAndCrew(),
+                    ]),
+              ),
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 30),
+                width: 1,
+                height: 200,
+                color: Colors.deepPurple.shade200,
+              ),
+              Expanded(
+                child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [_buildMoreInfo()]),
+              ),
             ],
           ),
-          Divider(color: Colors.deepPurple.shade200, height: 30),
-          const Text('Storyline',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 6),
-          Text(widget.movie.storyline),
-          Divider(color: Colors.deepPurple.shade200, height: 30),
+        ),
+      ],
+    );
+  }
+
+  Widget _mobileView() {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      _mainTitle(),
+      Divider(color: Colors.deepPurple.shade200, height: 30),
+      _buildStoryline(),
+      Divider(color: Colors.deepPurple.shade200, height: 30),
+      _buildCastAndCrew(),
+      Divider(color: Colors.deepPurple.shade200, height: 30),
+      _buildMoreInfo()
+    ]);
+  }
+
+  Widget _mainTitle() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 12),
+        Text(widget.movie.title,
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+        if (widget.movie.originalTitle != null)
+          Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text('(${widget.movie.originalTitle})',
+                  style: const TextStyle(fontSize: 16))),
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(widget.movie.year,
+                style: TextStyle(
+                    fontSize: 20,
+                    color: Colors.deepPurple,
+                    fontWeight: FontWeight.bold)),
+            if (widget.movie.contentRating != null)
+              ContentRatingInfo(contentRating: widget.movie.contentRating!),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStoryline() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Storyline',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 6),
+        Text(widget.movie.storyline),
+      ],
+    );
+  }
+
+  Widget _buildCastAndCrew() {
+    return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
           if (widget.movie.actors.isNotEmpty) ...[
             const Text('Cast',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
@@ -231,49 +309,55 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
                     .map((actor) => WikipediaSearchButton(actorName: actor))
                     .toList()),
           ],
-          Divider(color: Colors.deepPurple.shade200, height: 30),
-          const Text('More Information',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+        ]);
+  }
 
-          if (widget.movie.releaseDate.isNotEmpty) ...[
-            const SizedBox(height: 6),
-            Row(
-              children: [
-                Text('Release: '),
-                Text(formatReleaseDate(widget.movie.releaseDate),
-                    style: const TextStyle(fontWeight: FontWeight.bold)),
-              ],
-            )
-          ],
+  Widget _buildMoreInfo() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('More Information',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
 
-          if (widget.movie.duration != null) ...[
-            const SizedBox(height: 6),
-            Row(
-              children: [
-                Text('Duration: '),
-                Text(formatIsoDuration(widget.movie.duration!),
-                    style: const TextStyle(fontWeight: FontWeight.bold)),
-              ],
-            ),
-          ],
+        if (widget.movie.releaseDate.isNotEmpty) ...[
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Text('Release: '),
+              Text(formatReleaseDate(widget.movie.releaseDate),
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
+            ],
+          )
+        ],
 
-          // Content Rating and IMDb Rating
-          if (widget.movie.imdbRating != null) ...[
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                Image.asset('${AppConstants.assetImagePath}imbd_logo.png',
-                    height: 20),
-                const SizedBox(width: 6),
-                Text('${widget.movie.imdbRating}',
-                    style: TextStyle(fontWeight: FontWeight.bold)),
-                Text(' | 10', style: TextStyle(color: Colors.black54)),
-              ],
-            )
-          ],
-          _buildRatingGauge(),
-        ]),
-      ),
+        if (widget.movie.duration != null) ...[
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              Text('Duration: '),
+              Text(formatIsoDuration(widget.movie.duration!),
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
+            ],
+          ),
+        ],
+
+        // Content Rating and IMDb Rating
+        if (widget.movie.imdbRating != null) ...[
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Image.asset('${AppConstants.assetImagePath}imbd_logo.png',
+                  height: 20),
+              const SizedBox(width: 6),
+              Text('${widget.movie.imdbRating}',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              Text(' | 10', style: TextStyle(color: Colors.black54)),
+            ],
+          )
+        ],
+        _buildRatingGauge(),
+      ],
     );
   }
 

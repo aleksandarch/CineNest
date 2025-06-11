@@ -1,4 +1,6 @@
 import 'package:cine_nest/blocs/sign_in_bloc.dart';
+import 'package:cine_nest/screens/home/tabs/home_tab.dart';
+import 'package:cine_nest/screens/home/tabs/profile_tab.dart';
 import 'package:cine_nest/screens/home/tabs/search_tab.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -6,8 +8,6 @@ import 'package:provider/provider.dart';
 import '../../blocs/bookmark_bloc.dart';
 import '../../services/bookmark_service.dart';
 import '../../widgets/animated_bottom_bar.dart';
-import 'tabs/home_tab.dart';
-import 'tabs/profile_tab.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});

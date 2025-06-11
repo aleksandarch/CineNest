@@ -9,6 +9,7 @@ import '../../routes/router_constants.dart';
 import '../../utils/validators.dart';
 import '../../widgets/app_logo_widget.dart';
 import '../../widgets/text_link_button.dart';
+import '../../widgets/widgets_for_large_screen.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -74,71 +75,52 @@ class _SignupScreenState extends State<SignupScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Sign Up')),
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              return SingleChildScrollView(
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                  child: IntrinsicHeight(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: [
-                        AppLogoWidget(),
-                        _buildTextField(),
-                        CustomButton(onPressed: _signup, title: 'Sign Up'),
-                        TextLinkButton(
-                            leadingText: 'Already have an account?',
-                            trailingText: 'Log in',
-                            onTap: () => context.pop()),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
+      body: WidgetsForLargeScreen(
+        formKey: _formKey,
+        children: [
+          AppLogoWidget(),
+          _buildTextField(),
+          CustomButton(onPressed: _signup, title: 'Sign Up'),
+          TextLinkButton(
+              leadingText: 'Already have an account?',
+              trailingText: 'Log in',
+              onTap: () => context.pop()),
+        ],
       ),
     );
   }
 
   Widget _buildTextField() {
-    return Form(
-      key: _formKey,
-      child: Column(
-        children: [
-          CustomTextField(
-              hintText: 'Enter Nickname',
-              onSubmit: (_) {},
-              controller: _nicknameController,
-              keyboardType: TextInputType.text,
-              textInputAction: TextInputAction.next,
-              validator: Validators.validateNickname,
-              title: 'Nickname'),
-          const SizedBox(height: 14),
-          CustomTextField(
-              hintText: 'Enter Email Address',
-              onSubmit: (_) {},
-              controller: _emailController,
-              keyboardType: TextInputType.emailAddress,
-              textInputAction: TextInputAction.next,
-              validator: Validators.validateEmail,
-              title: 'Email'),
-          const SizedBox(height: 14),
-          CustomTextField(
-              hintText: 'Enter Password',
-              onSubmit: (_) {},
-              controller: _passwordController,
-              keyboardType: TextInputType.text,
-              toObscure: true,
-              textInputAction: TextInputAction.done,
-              validator: Validators.validatePassword,
-              title: 'Password'),
-        ],
-      ),
+    return Column(
+      children: [
+        CustomTextField(
+            hintText: 'Enter Nickname',
+            onSubmit: (_) {},
+            controller: _nicknameController,
+            keyboardType: TextInputType.text,
+            textInputAction: TextInputAction.next,
+            validator: Validators.validateNickname,
+            title: 'Nickname'),
+        const SizedBox(height: 14),
+        CustomTextField(
+            hintText: 'Enter Email Address',
+            onSubmit: (_) {},
+            controller: _emailController,
+            keyboardType: TextInputType.emailAddress,
+            textInputAction: TextInputAction.next,
+            validator: Validators.validateEmail,
+            title: 'Email'),
+        const SizedBox(height: 14),
+        CustomTextField(
+            hintText: 'Enter Password',
+            onSubmit: (_) {},
+            controller: _passwordController,
+            keyboardType: TextInputType.text,
+            toObscure: true,
+            textInputAction: TextInputAction.done,
+            validator: Validators.validatePassword,
+            title: 'Password'),
+      ],
     );
   }
 }

@@ -3,7 +3,7 @@ import 'package:hive/hive.dart';
 part 'movie_model.g.dart';
 
 @HiveType(typeId: 0)
-class MovieModel extends HiveObject {
+class MovieModel {
   @HiveField(0)
   String id;
   @HiveField(1)

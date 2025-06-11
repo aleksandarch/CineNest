@@ -4,6 +4,7 @@ import 'package:app_settings/app_settings.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cine_nest/widgets/custom_button.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
@@ -53,6 +54,7 @@ class _ProfileImageState extends State<ProfileImage> {
                         ? _emptyImagePlaceholder()
                         : CachedNetworkImage(
                             imageUrl: widget.imageUrl!,
+                            useOldImageOnUrlChange: kIsWeb,
                             width: widget.height,
                             height: widget.height,
                             fit: BoxFit.cover,
@@ -149,15 +151,23 @@ class _ProfileImageState extends State<ProfileImage> {
           source: useCamera ? ImageSource.camera : ImageSource.gallery);
 
       if (pickedFile != null) {
-        File? croppedFile = await _cropImage(File(pickedFile.path));
-        if (croppedFile != null) {
-          if (widget.onImageSelected != null) {
-            widget.onImageSelected!(croppedFile);
+        if (Platform.isIOS) {
+          File? croppedFile = await _cropImage(File(pickedFile.path));
+          if (croppedFile != null) {
+            if (widget.onImageSelected != null) {
+              widget.onImageSelected!(croppedFile);
+            }
+            setState(() => _selectedImage = croppedFile);
           }
-          setState(() => _selectedImage = croppedFile);
+        } else {
+          setState(() => _selectedImage = File(pickedFile.path));
+          if (widget.onImageSelected != null && _selectedImage != null) {
+            widget.onImageSelected!(_selectedImage!);
+          }
         }
       }
     } catch (e) {
+      debugPrint('$e');
       _showPermissionDialog();
     }
   }

@@ -4,7 +4,7 @@ import 'package:hive/hive.dart';
 part 'bookmark_model.g.dart';
 
 @HiveType(typeId: 1)
-class BookmarkModel extends HiveObject {
+class BookmarkModel {
   @HiveField(0)
   final String movieId;
 

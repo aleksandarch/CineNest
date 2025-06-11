@@ -11,6 +11,7 @@ import '../routes/router_constants.dart';
 import '../utils/validators.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/profile_image.dart';
+import '../widgets/widgets_for_large_screen.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -55,54 +56,33 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(title: const Text('Edit Profile')),
-      body: SafeArea(
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 20),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              return SingleChildScrollView(
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                      minWidth: constraints.maxWidth,
-                      minHeight: constraints.maxHeight),
-                  child: IntrinsicHeight(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        _buildProfileFields(context, sb),
-                        _buildButtons(context, sb),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
+      body: WidgetsForLargeScreen(
+        formKey: _formKey,
+        children: [
+          _buildProfileFields(context, sb),
+          _buildButtons(context, sb),
+        ],
       ),
     );
   }
 
   Widget _buildProfileFields(BuildContext context, SignInBloc sb) {
-    return Form(
-      key: _formKey,
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
-        const SizedBox(height: 10),
-        ProfileImage(
-            imageUrl: sb.profileImageUrl,
-            height: 120,
-            enableImageSelect: true,
-            onImageSelected: (image) => setState(() => selectedImage = image)),
-        const SizedBox(height: 20),
-        CustomTextField(
-          controller: _nicknameController,
-          title: 'Nickname',
-          hintText: 'Enter your new nickname',
-          onSubmit: (String? value) {},
-          validator: Validators.validateNickname,
-        ),
-      ]),
-    );
+    return Column(mainAxisSize: MainAxisSize.min, children: [
+      const SizedBox(height: 10),
+      ProfileImage(
+          imageUrl: sb.profileImageUrl,
+          height: 120,
+          enableImageSelect: true,
+          onImageSelected: (image) => setState(() => selectedImage = image)),
+      const SizedBox(height: 20),
+      CustomTextField(
+        controller: _nicknameController,
+        title: 'Nickname',
+        hintText: 'Enter your new nickname',
+        onSubmit: (String? value) {},
+        validator: Validators.validateNickname,
+      ),
+    ]);
   }
 
   Widget _buildButtons(BuildContext context, SignInBloc sb) {

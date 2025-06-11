@@ -10,37 +10,56 @@ class NotFoundScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
+    final bool isLargeScreen = MediaQuery.of(context).size.width > 1400;
     return Scaffold(
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const SizedBox(),
-                Text('🎬🪺', style: TextStyle(fontSize: 64)),
-                Text('404\nToo far from the Nest!',
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.headlineMedium?.copyWith(
-                        color: Colors.deepPurple, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 16),
-                Text('You seem lost...\nLet\'s fly back to CineNest!',
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.bodyMedium
-                        ?.copyWith(color: Colors.black54)),
-                const SizedBox(height: 30),
-                CustomButton(
-                    onPressed: () async => context.go(RouteConstants.main),
-                    title: 'Back to CineNest'),
-                Image.asset('${AppConstants.assetImagePath}cactus.png'),
-              ],
-            ),
-          ),
+        child: Container(
+          margin: EdgeInsets.all(40),
+          alignment: Alignment.center,
+          child: isLargeScreen
+              ? Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                      _buildInfoColumn(context),
+                      Flexible(child: const SizedBox(width: 100)),
+                      Image.asset('${AppConstants.assetImagePath}cactus.png')
+                    ])
+              : Wrap(
+                  alignment: WrapAlignment.center,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 40,
+                  runSpacing: 40,
+                  children: [
+                    _buildInfoColumn(context),
+                    Image.asset('${AppConstants.assetImagePath}cactus.png')
+                  ],
+                ),
         ),
       ),
+    );
+  }
+
+  Widget _buildInfoColumn(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('404',
+            style: TextStyle(
+                fontSize: 68,
+                color: Colors.deepPurple,
+                fontWeight: FontWeight.bold)),
+        const SizedBox(height: 16),
+        Text('Too far from the Nest!',
+            style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold)),
+        const SizedBox(height: 16),
+        Text('You seem lost...\nLet\'s fly back to CineNest!',
+            style: TextStyle(color: Colors.black54, height: 1.6, fontSize: 18)),
+        const SizedBox(height: 30),
+        CustomButton(
+            onPressed: () async => context.go(RouteConstants.main),
+            title: 'Back to CineNest'),
+      ],
     );
   }
 }
