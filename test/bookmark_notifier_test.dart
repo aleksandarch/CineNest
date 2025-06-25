@@ -1,12 +1,11 @@
 import 'dart:io';
 
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_test/flutter_test.dart';
-import 'package:hive/hive.dart';
-
 import 'package:cine_nest/boxes/boxes.dart';
 import 'package:cine_nest/models/bookmark_model.dart';
 import 'package:cine_nest/providers/bookmark_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:hive/hive.dart';
 
 void main() {
   late Directory tempDir;
@@ -14,12 +13,15 @@ void main() {
   setUp(() async {
     tempDir = await Directory.systemTemp.createTemp('hive_test');
     Hive.init(tempDir.path);
-    Hive.registerAdapter(BookmarkModelAdapter());
+    if (!Hive.isAdapterRegistered(1)) {
+      Hive.registerAdapter(BookmarkModelAdapter());
+    }
     await Boxes.openBookmarkBox();
   });
 
   tearDown(() async {
     await Hive.deleteBoxFromDisk('BookmarkBox');
+    await Hive.close(); // resets the type registry
     await tempDir.delete(recursive: true);
   });
 

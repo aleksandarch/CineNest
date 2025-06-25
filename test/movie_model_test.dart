@@ -1,5 +1,5 @@
-import 'package:flutter_test/flutter_test.dart';
 import 'package:cine_nest/models/movie_model.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   test('fromJson parses optional fields correctly', () {
