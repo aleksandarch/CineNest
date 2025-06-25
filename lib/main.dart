@@ -6,12 +6,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:overlay_support/overlay_support.dart';
-import 'package:provider/provider.dart';
 
-import 'blocs/bookmark_bloc.dart';
-import 'blocs/sign_in_bloc.dart';
 import 'boxes/boxes.dart';
 import 'constants/constants.dart';
 import 'models/bookmark_model.dart';
@@ -43,11 +41,7 @@ class CineNestApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => BookmarkBloc()),
-        ChangeNotifierProvider<SignInBloc>(create: (context) => SignInBloc()),
-      ],
+    return ProviderScope(
       child: AnnotatedRegion<SystemUiOverlayStyle>(
         value: SystemUiOverlayStyle(
             statusBarColor: Colors.transparent,

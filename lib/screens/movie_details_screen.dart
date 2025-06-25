@@ -5,28 +5,28 @@ import 'package:cine_nest/constants/constants.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 
-import '../blocs/bookmark_bloc.dart';
-import '../blocs/sign_in_bloc.dart';
 import '../models/movie_model.dart';
+import '../providers/bookmark_provider.dart';
+import '../providers/sign_in_provider.dart';
 import '../routes/router_constants.dart';
 import '../widgets/actor_card.dart';
 import '../widgets/content_rating_info.dart';
 import '../widgets/movie_poster.dart';
 import '../widgets/rating_gauge.dart';
 
-class MovieDetailsScreen extends StatefulWidget {
+class MovieDetailsScreen extends ConsumerStatefulWidget {
   final MovieModel movie;
 
   const MovieDetailsScreen({super.key, required this.movie});
 
   @override
-  State<MovieDetailsScreen> createState() => _MovieDetailsScreenState();
+  ConsumerState<MovieDetailsScreen> createState() => _MovieDetailsScreenState();
 }
 
-class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
+class _MovieDetailsScreenState extends ConsumerState<MovieDetailsScreen> {
   final ScrollController _scrollController = ScrollController();
   bool _isScrolledEnough = false;
 
@@ -74,9 +74,9 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
   }
 
   AppBar _buildAppBar(BuildContext context) {
-    final sb = context.read<SignInBloc>();
-    final bb = context.watch<BookmarkBloc>();
-    final isBookmarked = bb.isBookmarked(widget.movie.id);
+    final sb = ref.read(signInProvider.notifier);
+    final bb = ref.watch(bookmarkProvider.notifier);
+    final isBookmarked = ref.watch(isBookmarkedProvider(widget.movie.id));
 
     final iconColor = _isScrolledEnough ? Colors.black : Colors.white;
 
@@ -94,22 +94,26 @@ class _MovieDetailsScreenState extends State<MovieDetailsScreen> {
           : Colors.transparent,
       surfaceTintColor: Colors.transparent,
       leading: IconButton(
-          splashColor: Colors.transparent,
-          highlightColor: Colors.transparent,
-          icon: Icon(Icons.adaptive.arrow_back, color: iconColor),
-          onPressed: () => context.pop()),
+        splashColor: Colors.transparent,
+        highlightColor: Colors.transparent,
+        icon: Icon(Icons.adaptive.arrow_back, color: iconColor),
+        onPressed: () => context.pop(),
+      ),
       actions: [
         IconButton(
-            splashColor: Colors.transparent,
-            highlightColor: Colors.transparent,
-            icon: Hero(
-                tag: 'bookmark-icon-${widget.movie.id}',
-                child: Icon(
-                    isBookmarked
-                        ? CupertinoIcons.bookmark_fill
-                        : CupertinoIcons.bookmark,
-                    color: iconColor)),
-            onPressed: () => onBookmarkToggle(context)),
+          splashColor: Colors.transparent,
+          highlightColor: Colors.transparent,
+          icon: Hero(
+            tag: 'bookmark-icon-${widget.movie.id}',
+            child: Icon(
+              isBookmarked
+                  ? CupertinoIcons.bookmark_fill
+                  : CupertinoIcons.bookmark,
+              color: iconColor,
+            ),
+          ),
+          onPressed: () => onBookmarkToggle(context),
+        ),
       ],
     );
   }

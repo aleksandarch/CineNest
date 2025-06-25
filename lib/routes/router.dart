@@ -1,9 +1,9 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 
-import '../blocs/sign_in_bloc.dart';
 import '../boxes/boxes.dart';
+import '../providers/sign_in_provider.dart';
 import '../screens/404_screen.dart';
 import '../screens/authentication/forgot_password_screen.dart';
 import '../screens/authentication/login_screen.dart';
@@ -55,10 +55,12 @@ class AppRoutes {
       ];
 
   static String? _redirectLogic(BuildContext context, GoRouterState state) {
+    final container = ProviderScope.containerOf(context, listen: false);
+    final sb = container.read(signInProvider.notifier);
+
     final String location = state.matchedLocation;
     debugPrint(location);
 
-    final sb = context.read<SignInBloc>();
     if (sb.isSignedIn) {
       if (location == RouteConstants.login ||
           location == RouteConstants.signup ||

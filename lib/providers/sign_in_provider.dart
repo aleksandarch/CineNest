@@ -5,30 +5,20 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:provider/provider.dart';
 
 import '../routes/router_constants.dart';
-import '../services/bookmark_service.dart';
-import 'bookmark_bloc.dart';
+import 'bookmark_provider.dart';
 
-class SignInBloc extends ChangeNotifier {
-  SignInBloc() {
-    _authStateChanges.listen((user) {
-      if (user == null) {
-        _handleSignOutCleanup();
-      } else {
-        _updateUserInfo(user);
-      }
-    });
-  }
+final signInProvider =
+    NotifierProvider<SignInController, void>(SignInController.new);
 
+class SignInController extends Notifier<void> {
   final _store = FirebaseStorage.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn(
-    scopes: ['email', 'profile'],
-  );
+  final GoogleSignIn _googleSignIn = GoogleSignIn(scopes: ['email', 'profile']);
 
   String? _userId;
   String? get userId => _userId;
@@ -50,10 +40,23 @@ class SignInBloc extends ChangeNotifier {
   static Stream<User?> get _authStateChanges =>
       FirebaseAuth.instance.authStateChanges();
 
+  @override
+  void build() {
+    _authStateChanges.listen((user) {
+      if (user == null) {
+        _handleSignOutCleanup();
+      } else {
+        _updateUserInfo(user);
+      }
+    });
+  }
+
   Future<User?> signInWithEmail(String email, String password) async {
     try {
-      UserCredential result = await _auth.signInWithEmailAndPassword(
-          email: email, password: password);
+      final result = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
       _updateUserInfo(result.user);
       return result.user;
     } on FirebaseAuthException catch (e) {
@@ -65,22 +68,16 @@ class SignInBloc extends ChangeNotifier {
   Future<User?> signInWithGoogle() async {
     try {
       if (kIsWeb) {
-        // WEB: Use Firebase popup-based login
         final googleProvider = GoogleAuthProvider();
-
         googleProvider.setCustomParameters({'login_hint': 'user@example.com'});
-
-        final UserCredential result =
-            await _auth.signInWithPopup(googleProvider);
+        final result = await _auth.signInWithPopup(googleProvider);
         _updateUserInfo(result.user);
         return result.user;
       } else {
-        // MOBILE: GoogleSignIn package
-        final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-        if (googleUser == null) return null; // user canceled
+        final googleUser = await _googleSignIn.signIn();
+        if (googleUser == null) return null;
 
-        final GoogleSignInAuthentication googleAuth =
-            await googleUser.authentication;
+        final googleAuth = await googleUser.authentication;
 
         final credential = GoogleAuthProvider.credential(
           accessToken: googleAuth.accessToken,
@@ -102,13 +99,14 @@ class SignInBloc extends ChangeNotifier {
 
   Future<User?> signUp(String nickname, String email, String password) async {
     try {
-      UserCredential result = await _auth.createUserWithEmailAndPassword(
-          email: email, password: password);
+      final result = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
 
       final user = result.user;
       if (user != null) {
         if (user.displayName == null || user.displayName!.isEmpty) {
-          // 1. Update Firebase Auth display name if not set
           await user.updateDisplayName(nickname);
           await user.reload();
         }
@@ -146,22 +144,21 @@ class SignInBloc extends ChangeNotifier {
   }
 
   Future<void> signOut(BuildContext context) async {
-    Provider.of<BookmarkBloc>(context, listen: false).clear();
+    ref.read(bookmarkProvider.notifier).clear();
 
     await _auth.signOut();
     await _googleSignIn.signOut();
     await _clearUserInfo();
 
-    notifyListeners();
-    if (context.mounted) context.replace(RouteConstants.main);
+    if (context.mounted) {
+      context.replace(RouteConstants.main);
+    }
   }
 
   Future<void> _handleSignOutCleanup() async {
-    BookmarkService.unsubscribe();
+    await ref.read(bookmarkProvider.notifier).clear();
     await Boxes.clearBookmarks();
-
     await _clearUserInfo();
-    notifyListeners();
   }
 
   Future<bool> deleteAccount(BuildContext context, String password) async {
@@ -169,19 +166,19 @@ class SignInBloc extends ChangeNotifier {
       final user = _auth.currentUser;
       if (user == null) return false;
 
-      // Re-authenticate
-      final cred =
-          EmailAuthProvider.credential(email: user.email!, password: password);
-      await user.reauthenticateWithCredential(cred);
+      final cred = EmailAuthProvider.credential(
+        email: user.email!,
+        password: password,
+      );
 
+      await user.reauthenticateWithCredential(cred);
       await _auth.currentUser?.delete();
       await _clearUserInfo();
 
       if (context.mounted) {
-        Provider.of<BookmarkBloc>(context, listen: false).clear();
+        ref.read(bookmarkProvider.notifier).clear();
       }
 
-      notifyListeners();
       return true;
     } on FirebaseAuthException catch (e) {
       debugPrint(e.message);
@@ -204,7 +201,6 @@ class SignInBloc extends ChangeNotifier {
     } else {
       await _clearUserInfo();
     }
-    notifyListeners();
   }
 
   Future<void> _clearUserInfo() async {

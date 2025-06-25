@@ -1,33 +1,33 @@
 import 'package:animated_text_kit/animated_text_kit.dart';
 import 'package:card_swiper/card_swiper.dart';
+import 'package:cine_nest/providers/sign_in_provider.dart';
 import 'package:cine_nest/widgets/empty_page.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:provider/provider.dart';
 
-import '../../../blocs/sign_in_bloc.dart';
 import '../../../boxes/boxes.dart';
 import '../../../constants/constants.dart';
 import '../../../models/movie_model.dart';
 import '../../../widgets/movie_display_cards/new_movie_card.dart';
 import '../../../widgets/movie_display_cards/standard_movie_card.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   final ScrollController scrollController;
   const HomeScreen({super.key, required this.scrollController});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends ConsumerState<HomeScreen> {
   String selectedGenre = 'All';
 
   @override
   Widget build(BuildContext context) {
     final saveHorizontalPadding = MediaQuery.of(context).padding.left + 20;
     final Box<MovieModel> movieBox = Boxes.getMovies();
-    final sb = context.watch<SignInBloc>();
+    final sb = ref.watch(signInProvider.notifier);
 
     return SingleChildScrollView(
       controller: widget.scrollController,
@@ -88,7 +88,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildSalute(double saveHorizontalPadding, SignInBloc sb) {
+  Widget _buildSalute(double saveHorizontalPadding, SignInController sb) {
     final now = DateTime.now();
 
     final Box box = Boxes.getUserData();

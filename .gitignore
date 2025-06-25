@@ -21,10 +21,12 @@ ios/Flutter/Flutter.framework
 ios/Flutter/Flutter.podspec
 ios/ServiceDefinitions.json
 
+
 # Environment variables
 .env
 google-services.json
 GoogleService-Info.plist
+lib/firebase_options.dart
 
 # Firebase secrets and config files (if any)
 firebase-debug.log

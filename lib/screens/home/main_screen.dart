@@ -1,22 +1,21 @@
-import 'package:cine_nest/blocs/sign_in_bloc.dart';
 import 'package:cine_nest/screens/home/tabs/home_tab.dart';
 import 'package:cine_nest/screens/home/tabs/profile_tab.dart';
 import 'package:cine_nest/screens/home/tabs/search_tab.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../blocs/bookmark_bloc.dart';
-import '../../services/bookmark_service.dart';
+import '../../providers/bookmark_provider.dart';
+import '../../providers/sign_in_provider.dart';
 import '../../widgets/animated_bottom_bar.dart';
 
-class MainScreen extends StatefulWidget {
+class MainScreen extends ConsumerStatefulWidget {
   const MainScreen({super.key});
 
   @override
-  State<MainScreen> createState() => _MainScreenState();
+  ConsumerState<MainScreen> createState() => _MainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen>
+class _MainScreenState extends ConsumerState<MainScreen>
     with SingleTickerProviderStateMixin {
   late TabController tabController;
   final ScrollController scrollController = ScrollController();
@@ -27,10 +26,9 @@ class _MainScreenState extends State<MainScreen>
   void initState() {
     super.initState();
 
-    final sb = context.read<SignInBloc>();
+    final sb = ref.read(signInProvider.notifier);
     if (sb.isSignedIn) {
-      final bb = context.read<BookmarkBloc>();
-      BookmarkService.subscribeToBookmarks(sb.userId!, bb);
+      ref.read(bookmarkProvider.notifier).startSync(sb.userId!);
     }
 
     tabController =

@@ -3,31 +3,31 @@ import 'dart:io';
 import 'package:cine_nest/widgets/custom_button.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 
-import '../blocs/sign_in_bloc.dart';
+import '../providers/sign_in_provider.dart';
 import '../routes/router_constants.dart';
 import '../utils/validators.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/profile_image.dart';
 import '../widgets/widgets_for_large_screen.dart';
 
-class EditProfileScreen extends StatefulWidget {
+class EditProfileScreen extends ConsumerStatefulWidget {
   const EditProfileScreen({super.key});
 
   @override
-  State<EditProfileScreen> createState() => _EditProfileScreenState();
+  ConsumerState<EditProfileScreen> createState() => _EditProfileScreenState();
 }
 
-class _EditProfileScreenState extends State<EditProfileScreen> {
+class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late TextEditingController _nicknameController;
   File? selectedImage;
 
   @override
   void initState() {
-    final sb = context.read<SignInBloc>();
+    final sb = ref.read(signInProvider.notifier);
     _nicknameController = TextEditingController(text: sb.username ?? '');
     super.initState();
   }
@@ -42,7 +42,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
 
-    final sb = context.read<SignInBloc>();
+    final sb = ref.read(signInProvider.notifier);
     if (!sb.isSignedIn) {
       WidgetsBinding.instance
           .addPostFrameCallback((_) => context.go(RouteConstants.login));
@@ -51,7 +51,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final sb = context.read<SignInBloc>();
+    final sb = ref.read(signInProvider.notifier);
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
@@ -66,7 +66,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-  Widget _buildProfileFields(BuildContext context, SignInBloc sb) {
+  Widget _buildProfileFields(BuildContext context, SignInController sb) {
     return Column(mainAxisSize: MainAxisSize.min, children: [
       const SizedBox(height: 10),
       ProfileImage(
@@ -85,7 +85,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     ]);
   }
 
-  Widget _buildButtons(BuildContext context, SignInBloc sb) {
+  Widget _buildButtons(BuildContext context, SignInController sb) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -230,7 +230,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-  Future<void> updateUser(SignInBloc sb) async {
+  Future<void> updateUser(SignInController sb) async {
     final newNickname = _nicknameController.text.trim();
     bool changed = false;
 

@@ -2,12 +2,12 @@ import 'package:cine_nest/models/bookmark_model.dart';
 import 'package:cine_nest/models/movie_model.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 
-import '../../../blocs/bookmark_bloc.dart';
-import '../../../blocs/sign_in_bloc.dart';
 import '../../../boxes/boxes.dart';
+import '../../../providers/bookmark_provider.dart';
+import '../../../providers/sign_in_provider.dart';
 import '../../../routes/router_constants.dart';
 import '../../../widgets/empty_page.dart';
 import '../../../widgets/movie_display_cards/standard_movie_card.dart';
@@ -30,13 +30,13 @@ extension ProfileMenuActionExtension on ProfileMenuAction {
   }
 }
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends ConsumerWidget {
   final ScrollController scrollController;
 
   const ProfileScreen({super.key, required this.scrollController});
 
   void _handleMenuAction(
-      BuildContext context, SignInBloc sb, ProfileMenuAction action) {
+      BuildContext context, SignInController sb, ProfileMenuAction action) {
     switch (action) {
       case ProfileMenuAction.login:
         context.push(RouteConstants.login);
@@ -56,9 +56,10 @@ class ProfileScreen extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final saveHorizontalPadding = MediaQuery.of(context).padding.left + 20;
-    final sb = context.watch<SignInBloc>();
+    final sb = ref.watch(signInProvider.notifier);
+    final bb = ref.watch(bookmarkProvider);
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: saveHorizontalPadding),
@@ -73,7 +74,7 @@ class ProfileScreen extends StatelessWidget {
                     style:
                         TextStyle(fontSize: 26, fontWeight: FontWeight.bold))),
             sb.isSignedIn
-                ? _buildProfileTabContent(context, sb)
+                ? _buildProfileTabContent(context, sb, bb)
                 : const EmptyPage(
                     title: 'Please sign in to see your bookmarks.',
                     showLoginButton: true,
@@ -84,18 +85,18 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildProfileTabContent(BuildContext context, SignInBloc sb) {
-    final bb = context.watch<BookmarkBloc>();
+  Widget _buildProfileTabContent(BuildContext context, SignInController sb,
+      List<BookmarkModel> bookmarks) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildProfileCard(context, sb),
-        _buildMyBookmarks(context, bb),
+        _buildMyBookmarks(context, bookmarks),
       ],
     );
   }
 
-  Widget _buildProfileCard(BuildContext context, SignInBloc sb) {
+  Widget _buildProfileCard(BuildContext context, SignInController sb) {
     return GestureDetector(
       onTap: () => context.push(RouteConstants.editProfile),
       child: Align(
@@ -145,7 +146,7 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildProfileMenu(BuildContext context, SignInBloc sb) {
+  Widget _buildProfileMenu(BuildContext context, SignInController sb) {
     return SizedBox(
       width: 24,
       height: 24,
@@ -212,12 +213,13 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildMyBookmarks(BuildContext context, BookmarkBloc bb) {
+  Widget _buildMyBookmarks(
+      BuildContext context, List<BookmarkModel> bookmarks) {
     final movieBox = Boxes.getMovies();
 
     // 1. Create a Map for fast lookup: movieId -> Bookmark
     final bookmarkMap = {
-      for (final bookmark in bb.bookmarks) bookmark.movieId: bookmark
+      for (final bookmark in bookmarks) bookmark.movieId: bookmark
     };
 
     // 2. Filter only movies that are bookmarked
@@ -239,13 +241,13 @@ class ProfileScreen extends StatelessWidget {
         const Text('My Bookmarks',
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         const SizedBox(height: 10),
-        _buildBookmarksGrid(context, movies),
+        _buildBookmarksGrid(context, movies, bookmarks),
       ],
     );
   }
 
-  Widget _buildBookmarksGrid(BuildContext context, List<MovieModel> movies) {
-    final bookmarks = context.read<BookmarkBloc>().bookmarks;
+  Widget _buildBookmarksGrid(
+      BuildContext context, List<MovieModel> movies, bookmarks) {
     if (movies.isEmpty) {
       return const Padding(
           padding: EdgeInsets.only(top: 80),

@@ -1,24 +1,24 @@
 import 'package:cine_nest/widgets/custom_button.dart';
 import 'package:cine_nest/widgets/custom_text_field.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 
-import '../../blocs/sign_in_bloc.dart';
+import '../../providers/sign_in_provider.dart';
 import '../../routes/router_constants.dart';
 import '../../utils/validators.dart';
 import '../../widgets/app_logo_widget.dart';
 import '../../widgets/text_link_button.dart';
 import '../../widgets/widgets_for_large_screen.dart';
 
-class SignupScreen extends StatefulWidget {
+class SignupScreen extends ConsumerStatefulWidget {
   const SignupScreen({super.key});
 
   @override
-  State<SignupScreen> createState() => _SignupScreenState();
+  ConsumerState<SignupScreen> createState() => _SignupScreenState();
 }
 
-class _SignupScreenState extends State<SignupScreen> {
+class _SignupScreenState extends ConsumerState<SignupScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   late TextEditingController _nicknameController;
   late TextEditingController _emailController;
@@ -43,7 +43,7 @@ class _SignupScreenState extends State<SignupScreen> {
   @override
   didChangeDependencies() {
     super.didChangeDependencies();
-    final SignInBloc sb = context.read<SignInBloc>();
+    final sb = ref.read(signInProvider.notifier);
     if (sb.isSignedIn) {
       WidgetsBinding.instance
           .addPostFrameCallback((_) => context.go(RouteConstants.main));
@@ -55,7 +55,7 @@ class _SignupScreenState extends State<SignupScreen> {
       return;
     }
 
-    final SignInBloc sb = context.read<SignInBloc>();
+    final sb = ref.read(signInProvider.notifier);
     final nickname = _nicknameController.text.trim();
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();

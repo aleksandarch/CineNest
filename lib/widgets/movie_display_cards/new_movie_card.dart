@@ -1,24 +1,24 @@
 import 'package:cine_nest/models/movie_model.dart';
+import 'package:cine_nest/providers/bookmark_provider.dart';
 import 'package:cine_nest/widgets/movie_poster.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 
-import '../../blocs/bookmark_bloc.dart';
-import '../../blocs/sign_in_bloc.dart';
+import '../../providers/sign_in_provider.dart';
 import '../../routes/router_constants.dart';
 
-class NewMovieCard extends StatefulWidget {
+class NewMovieCard extends ConsumerStatefulWidget {
   final MovieModel movie;
 
   const NewMovieCard({super.key, required this.movie});
 
   @override
-  State<NewMovieCard> createState() => _NewMovieCardState();
+  ConsumerState<NewMovieCard> createState() => _NewMovieCardState();
 }
 
-class _NewMovieCardState extends State<NewMovieCard> {
+class _NewMovieCardState extends ConsumerState<NewMovieCard> {
   double _scale = 1.0;
 
   void _onTapDown(_) => setState(() => _scale = 0.96);
@@ -27,9 +27,7 @@ class _NewMovieCardState extends State<NewMovieCard> {
 
   @override
   Widget build(BuildContext context) {
-    final sb = context.watch<SignInBloc>();
-    final bb = context.watch<BookmarkBloc>();
-    final isBookmarked = bb.isBookmarked(widget.movie.id);
+    final isBookmarked = ref.watch(isBookmarkedProvider(widget.movie.id));
 
     return GestureDetector(
       onTapDown: _onTapDown,
@@ -57,10 +55,10 @@ class _NewMovieCardState extends State<NewMovieCard> {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Colors.black.withOpacity(0.1),
+                    Colors.black.withValues(alpha: 0.1),
                     Colors.transparent,
                     Colors.transparent,
-                    Colors.black.withOpacity(0.8),
+                    Colors.black.withValues(alpha: 0.8),
                   ],
                 ),
               ),
@@ -73,9 +71,12 @@ class _NewMovieCardState extends State<NewMovieCard> {
                     alignment: Alignment.topRight,
                     child: GestureDetector(
                       onTap: () {
-                        if (sb.isSignedIn) {
+                        final controller = ref.read(signInProvider.notifier);
+                        final isLoggedIn = controller.isSignedIn;
+                        if (isLoggedIn) {
+                          final bb = ref.read(bookmarkProvider.notifier);
                           bb.toggleBookmark(
-                            userId: sb.userId!,
+                            userId: controller.userId!,
                             movieId: widget.movie.id,
                           );
                         } else {

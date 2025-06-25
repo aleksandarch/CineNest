@@ -1,21 +1,22 @@
 import 'package:cine_nest/widgets/custom_button.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:provider/provider.dart';
 
-import '../../blocs/sign_in_bloc.dart';
+import '../../providers/sign_in_provider.dart';
 import '../../utils/validators.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../widgets/widgets_for_large_screen.dart';
 
-class ForgotPasswordScreen extends StatefulWidget {
+class ForgotPasswordScreen extends ConsumerStatefulWidget {
   const ForgotPasswordScreen({super.key});
 
   @override
-  State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
+  ConsumerState<ForgotPasswordScreen> createState() =>
+      _ForgotPasswordScreenState();
 }
 
-class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
+class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   bool _isLoading = false;
@@ -29,7 +30,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     if (_isLoading || !validateForm()) return;
     setState(() => _isLoading = true);
 
-    final sb = context.read<SignInBloc>();
+    final sb = ref.read(signInProvider.notifier);
     final email = _emailController.text.trim();
 
     final isSuccessful = await sb.sendPasswordResetEmail(email);
